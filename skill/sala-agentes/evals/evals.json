@@ -1,0 +1,23 @@
+{
+  "skill_name": "sala-agentes",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "instala a sala dos agentes aqui pra mim",
+      "expected_output": "Roda --verificar, faz a rodada 1 de perguntas (quantas mesas, tipo de projeto, onde vale, painel) e a rodada 2 (segmento de cada mesa com proposta) antes de gravar; monta o JSON, roda instalar.mjs e fecha com chat novo + /sala + link do painel.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "quero a sala com 4 mesas: backend, app flutter, testes e documentação, só pra todos os projetos, sem painel",
+      "expected_output": "Não repete as perguntas já respondidas; propõe Dev Backend (Sonnet), Dev Mobile (Sonnet), QA (Haiku), Documentador (Haiku) com palavras em minúsculas sem acento; instala com --onde conta e sem --painel.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "a sala já tá instalada, mas esse projeto precisa de uma mesa de segurança e uma de banco de dados",
+      "expected_output": "Vai direto para Mudar a equipe: acrescenta Segurança e Banco de Dados ao .claude/sala-agentes.json do projeto (criando a partir da equipe em uso se não existir), sem reinstalar o plugin.",
+      "files": []
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "_como_usar": [
+    "Equipe do projeto Sala dos Agentes (o próprio plugin). Vale só nesta pasta.",
+    "papeis: na ordem das mesas (as 2 primeiras ficam ao lado do líder). Citar o nome ou apelido na tarefa manda direto para a mesa."
+  ],
+  "lider": { "nome": "Tech Lead", "modelo": "Opus" },
+  "papeis": [
+    { "nome": "QA E2E", "modelo": "Sonnet", "palavras": ["e2e", "valid", "link", "navegador", "print", "ponta", "regress"], "apelidos": ["QA end-to-end", "Dev QA E2E"] },
+    { "nome": "Documentador", "modelo": "Haiku", "palavras": ["doc", "readme", "skill", "guia", "manual", "changelog", "log"] },
+    { "nome": "Dev Plugin", "modelo": "Sonnet", "palavras": ["plugin", "hook", "sala", "mesa", "svg", "register", "room", "team", "estado"] },
+    { "nome": "Dev Painel Web", "modelo": "Sonnet", "palavras": ["painel", "web", "server", "http", "html", "css", "pagina", "lan"] },
+    { "nome": "Dev Infra", "modelo": "Sonnet", "palavras": ["infra", "instal", "startup", "inicializar", "settings", "env", "firewall", "windows", "script"] },
+    { "nome": "QA", "modelo": "Haiku", "palavras": ["qa", "test", "smoke", "confer", "checklist"] },
+    { "nome": "Revisor de Código", "modelo": "Sonnet", "palavras": ["revis", "review", "audit", "segur", "refator"], "apelidos": ["Revisor"] }
+  ]
+}

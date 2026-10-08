@@ -1,0 +1,234 @@
+{
+ "v": 1,
+ "id": "exemplo-2",
+ "title": "Tela de extrato",
+ "project": "app-financeiro",
+ "cwd": "C:\\projetos\\app-financeiro",
+ "startedAt": 1791470666845,
+ "updatedAt": 1791473366845,
+ "ended": false,
+ "version": "exemplo",
+ "team": {
+  "lead": "Tech Lead",
+  "leadModel": "Opus",
+  "source": "padrão",
+  "roles": [
+   {
+    "name": "QA",
+    "model": "Haiku",
+    "keywords": [
+     "qa",
+     "test",
+     "valid",
+     "smoke",
+     "verific",
+     "revis",
+     "review",
+     "audit",
+     "confer"
+    ],
+    "aliases": []
+   },
+   {
+    "name": "Documentador",
+    "model": "Haiku",
+    "keywords": [
+     "doc",
+     "log",
+     "changelog",
+     "readme",
+     "handoff",
+     "checklist",
+     "registr",
+     "anot",
+     "wiki",
+     "manual"
+    ],
+    "aliases": []
+   },
+   {
+    "name": "Dev Backend",
+    "model": "Sonnet",
+    "keywords": [
+     "back",
+     "api",
+     "nest",
+     "auth",
+     "banco",
+     "db",
+     "sql",
+     "signal",
+     "endpoint",
+     "servico",
+     "service",
+     "sdk",
+     "rota"
+    ],
+    "aliases": []
+   },
+   {
+    "name": "Dev Frontend",
+    "model": "Sonnet",
+    "keywords": [
+     "front",
+     "react",
+     "tela",
+     "ui",
+     "ux",
+     "css",
+     "html",
+     "wpf",
+     "xaml",
+     "layout",
+     "player",
+     "componente",
+     "visual"
+    ],
+    "aliases": []
+   },
+   {
+    "name": "Dev Infra",
+    "model": "Sonnet",
+    "keywords": [
+     "infra",
+     "docker",
+     "compose",
+     "kubernetes",
+     "pipeline",
+     "rede",
+     "network",
+     "firewall",
+     "vpn",
+     "deploy",
+     "servidor",
+     "server",
+     "instal",
+     "nginx"
+    ],
+    "aliases": []
+   }
+  ]
+ },
+ "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 760 472\" width=\"1520\" height=\"944\" font-family=\"Segoe UI, system-ui, sans-serif\"><defs><linearGradient id=\"ng\" x1=\"0\" x2=\"1\"><stop offset=\"0\" stop-color=\"#FECB81\"/><stop offset=\".5\" stop-color=\"#C9A24B\"/><stop offset=\"1\" stop-color=\"#946930\"/></linearGradient><pattern id=\"tile\" width=\"40\" height=\"40\" patternUnits=\"userSpaceOnUse\"><path d=\"M40 0H0V40\" fill=\"none\" stroke=\"#1E1C19\" stroke-width=\"1\"/></pattern></defs><style>\n@keyframes type { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-3px) } }\n.typeA { animation: type .28s infinite } .typeB { animation: type .28s infinite .14s }\n.cmdA { animation: type .7s infinite } .cmdB { animation: type .7s infinite .35s }\n@keyframes nod { 0%,100% { transform: rotate(-5deg) } 50% { transform: rotate(5deg) } }\n.nod { animation: nod 2.4s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 100% }\n@keyframes float { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-4px) } }\n.float { animation: float 2s ease-in-out infinite }\n@keyframes blink { 0%,49% { opacity: 1 } 50%,100% { opacity: 0 } }\n.blink { animation: blink 1s steps(1) infinite }\n@keyframes pulse { 0% { opacity: .9; transform: scale(1) } 100% { opacity: 0; transform: scale(1.9) } }\n.pulse { animation: pulse 1.4s ease-out infinite; transform-box: fill-box; transform-origin: center }\n@keyframes wave { 0%,100% { transform: rotate(-14deg) } 50% { transform: rotate(14deg) } }\n.wave { animation: wave .8s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 100% }\n@keyframes hop { 0%,100% { transform: translateY(0) } 30% { transform: translateY(-7px) } 60% { transform: translateY(0) } }\n.hop { animation: hop 1.1s ease-in-out 3 }\n@keyframes flow { to { stroke-dashoffset: -28 } }\n.flow { animation: flow .9s linear infinite }\n@keyframes scan { 0% { transform: translateY(0) } 100% { transform: translateY(15px) } }\n.scan { animation: scan 1.6s ease-in-out infinite alternate }\n@keyframes grow { 0% { transform: scaleX(.1) } 100% { transform: scaleX(1) } }\n.grow { animation: grow 1.4s steps(7) infinite; transform-box: fill-box; transform-origin: left center }\n@keyframes dots { 0%,20% { opacity: .2 } 50% { opacity: 1 } 100% { opacity: .2 } }\n.d1 { animation: dots 1.2s infinite } .d2 { animation: dots 1.2s infinite .2s } .d3 { animation: dots 1.2s infinite .4s }\n@keyframes zz { 0% { opacity: 0; transform: translate(0,0) } 30% { opacity: 1 } 100% { opacity: 0; transform: translate(9px,-14px) } }\n.zz { animation: zz 2.8s ease-out infinite }\n@keyframes glow { 0%,100% { opacity: .05 } 50% { opacity: .12 } }\n.glow { animation: glow 2.4s ease-in-out infinite }\n@media (prefers-reduced-motion: reduce) { * { animation: none !important } }\n</style><rect width=\"760\" height=\"472\" rx=\"14\" fill=\"#161513\"/><rect width=\"760\" height=\"472\" rx=\"14\" fill=\"url(#tile)\"/><rect width=\"760\" height=\"56\" rx=\"14\" fill=\"#100F0D\"/><rect y=\"40\" width=\"760\" height=\"16\" fill=\"#100F0D\"/><rect y=\"56\" width=\"760\" height=\"2\" fill=\"#C9A24B\" opacity=\".55\"/><text x=\"24\" y=\"29\" fill=\"url(#ng)\" font-size=\"20\" font-weight=\"700\" letter-spacing=\"4\">SQUADESK</text><text x=\"24\" y=\"47\" fill=\"#A39C8F\" font-size=\"12\" letter-spacing=\"1.5\">SALA DOS AGENTES<tspan letter-spacing=\"0\" fill=\"#FECB81\"> · 150 mil tokens</tspan></text><text x=\"736\" y=\"28\" text-anchor=\"end\" font-size=\"15\" font-weight=\"600\" fill=\"#EFEBE2\">2 trabalhando</text><text x=\"736\" y=\"47\" text-anchor=\"end\" font-size=\"13\" fill=\"#6F695F\">nada pendente com você</text><rect x=\"300\" y=\"9\" width=\"74\" height=\"36\" rx=\"3\" fill=\"#0D1420\" stroke=\"#2A2824\" stroke-width=\"2\"/><path d=\"M337 9 v36\" stroke=\"#2A2824\" stroke-width=\"2\"/><rect x=\"308\" y=\"31\" width=\"6\" height=\"14\" fill=\"#151D2B\"/><rect x=\"318\" y=\"25\" width=\"9\" height=\"20\" fill=\"#151D2B\"/><rect x=\"344\" y=\"28\" width=\"8\" height=\"17\" fill=\"#151D2B\"/><rect x=\"356\" y=\"22\" width=\"10\" height=\"23\" fill=\"#151D2B\"/><rect x=\"320\" y=\"28\" width=\"2\" height=\"2\" fill=\"#C9A24B\" opacity=\".8\"/><rect x=\"359\" y=\"26\" width=\"2\" height=\"2\" fill=\"#C9A24B\" opacity=\".8\"/><rect x=\"346\" y=\"33\" width=\"2\" height=\"2\" fill=\"#C9A24B\" opacity=\".6\"/><rect x=\"456\" y=\"9\" width=\"74\" height=\"36\" rx=\"3\" fill=\"#0D1420\" stroke=\"#2A2824\" stroke-width=\"2\"/><path d=\"M493 9 v36\" stroke=\"#2A2824\" stroke-width=\"2\"/><rect x=\"464\" y=\"31\" width=\"6\" height=\"14\" fill=\"#151D2B\"/><rect x=\"474\" y=\"25\" width=\"9\" height=\"20\" fill=\"#151D2B\"/><rect x=\"500\" y=\"28\" width=\"8\" height=\"17\" fill=\"#151D2B\"/><rect x=\"512\" y=\"22\" width=\"10\" height=\"23\" fill=\"#151D2B\"/><rect x=\"476\" y=\"28\" width=\"2\" height=\"2\" fill=\"#C9A24B\" opacity=\".8\"/><rect x=\"515\" y=\"26\" width=\"2\" height=\"2\" fill=\"#C9A24B\" opacity=\".8\"/><rect x=\"502\" y=\"33\" width=\"2\" height=\"2\" fill=\"#C9A24B\" opacity=\".6\"/><ellipse cx=\"380\" cy=\"190\" rx=\"130\" ry=\"40\" fill=\"#C9A24B\" opacity=\".05\"/><rect x=\"17\" y=\"452\" width=\"18\" height=\"16\" rx=\"3\" fill=\"#4F4234\"/><circle cx=\"20\" cy=\"448\" r=\"8\" fill=\"#3E6B47\"/><circle cx=\"32\" cy=\"446\" r=\"8\" fill=\"#4C7F55\"/><circle cx=\"26\" cy=\"439\" r=\"8\" fill=\"#5A9163\"/><rect x=\"725\" y=\"452\" width=\"18\" height=\"16\" rx=\"3\" fill=\"#4F4234\"/><circle cx=\"728\" cy=\"448\" r=\"8\" fill=\"#3E6B47\"/><circle cx=\"740\" cy=\"446\" r=\"8\" fill=\"#4C7F55\"/><circle cx=\"734\" cy=\"439\" r=\"8\" fill=\"#5A9163\"/><path class=\"flow\" d=\"M380 202 Q368.525 242 357.05 292\" fill=\"none\" stroke=\"#C9A24B\" stroke-width=\"2\" stroke-dasharray=\"5 9\" opacity=\".6\"/><g opacity=\"1\"><g transform=\"translate(380 178) scale(1.35) translate(-380 -178)\"><ellipse class=\"glow\" cx=\"380\" cy=\"184\" rx=\"74\" ry=\"20\" fill=\"#C9A24B\"/><rect x=\"345\" y=\"134\" width=\"36\" height=\"40\" rx=\"9\" fill=\"#2A2824\"/><g class=\"\"><rect x=\"349\" y=\"149\" width=\"28\" height=\"32\" rx=\"11\" fill=\"#C9A24B\"/><g class=\"\"><circle cx=\"363\" cy=\"138\" r=\"11\" fill=\"#E9CFA9\"/><path d=\"M352 137 a11 11 0 0 1 22 0 q-12 -5 -22 0z\" fill=\"#3B2F2A\"/><circle cx=\"366\" cy=\"138\" r=\"1.5\" fill=\"#1A1712\"/><circle cx=\"371.5\" cy=\"138\" r=\"1.5\" fill=\"#1A1712\"/></g><rect class=\"\" x=\"367\" y=\"165\" width=\"18\" height=\"5\" rx=\"2.5\" fill=\"#C9A24B\" opacity=\".85\"/><rect class=\"\" x=\"365\" y=\"170\" width=\"20\" height=\"5\" rx=\"2.5\" fill=\"#C9A24B\" opacity=\".85\"/></g><rect x=\"326\" y=\"178\" width=\"108\" height=\"13\" rx=\"3\" fill=\"#3A3128\" stroke=\"#4F4234\"/><rect x=\"332\" y=\"191\" width=\"4\" height=\"10\" fill=\"#2A241D\"/><rect x=\"424\" y=\"191\" width=\"4\" height=\"10\" fill=\"#2A241D\"/><rect x=\"374\" y=\"175\" width=\"22\" height=\"4\" rx=\"1\" fill=\"#2F2B26\"/><rect x=\"405\" y=\"170\" width=\"4\" height=\"8\" fill=\"#2B2925\"/><rect x=\"386\" y=\"141\" width=\"42\" height=\"30\" rx=\"3\" fill=\"#0C0C0B\" stroke=\"#34302A\"/><rect x=\"389\" y=\"144\" width=\"36\" height=\"23\" rx=\"1.5\" fill=\"#1B2430\"/><text x=\"407\" y=\"160\" text-anchor=\"middle\" font-size=\"12\" font-weight=\"700\" fill=\"#C9A24B\">⇢</text><g class=\"float\"><rect x=\"361\" y=\"96\" width=\"34\" height=\"20\" rx=\"8\" fill=\"#23211D\" stroke=\"#C9A24B\" stroke-width=\"1.2\"/><path d=\"M369 116 l-3 6 l8 -6z\" fill=\"#23211D\" stroke=\"#C9A24B\" stroke-width=\"1.2\" stroke-linejoin=\"round\"/><rect x=\"366\" y=\"114\" width=\"10\" height=\"3\" fill=\"#23211D\"/><text x=\"378\" y=\"110.5\" text-anchor=\"middle\" font-size=\"14\" font-weight=\"700\" fill=\"#C9A24B\">→</text></g></g><text x=\"380\" y=\"192\" text-anchor=\"middle\" font-size=\"11\" font-weight=\"600\" fill=\"#FECB81\" opacity=\".9\">150 mil tokens</text><text x=\"380\" y=\"228\" text-anchor=\"middle\" font-size=\"17\" font-weight=\"700\" fill=\"#EFEBE2\" stroke=\"#161513\" stroke-width=\"5\" stroke-linejoin=\"round\" paint-order=\"stroke\">Tech Lead</text><text x=\"380\" y=\"249\" text-anchor=\"middle\" font-size=\"14\" font-weight=\"500\" fill=\"#C9A24B\" stroke=\"#161513\" stroke-width=\"5\" stroke-linejoin=\"round\" paint-order=\"stroke\">● delegando <tspan fill=\"#C9A24B\">· Opus</tspan></text></g><g opacity=\"0.55\"><g transform=\"translate(130 178) scale(1.35) translate(-130 -178)\"><rect x=\"95\" y=\"134\" width=\"36\" height=\"40\" rx=\"9\" fill=\"#2A2824\"/><g class=\"\"><rect x=\"99\" y=\"149\" width=\"28\" height=\"32\" rx=\"11\" fill=\"#7FB3A3\"/><g class=\"\"><circle cx=\"113\" cy=\"138\" r=\"11\" fill=\"#E2BE96\"/><path d=\"M102 137 a11 11 0 0 1 22 0 q-12 -5 -22 0z\" fill=\"#C9A24B\"/><path d=\"M114 138 h4 M120 138 h4\" stroke=\"#1A1712\" stroke-width=\"1.4\" stroke-linecap=\"round\"/></g><rect class=\"\" x=\"117\" y=\"165\" width=\"18\" height=\"5\" rx=\"2.5\" fill=\"#7FB3A3\" opacity=\".85\"/><rect class=\"\" x=\"115\" y=\"170\" width=\"20\" height=\"5\" rx=\"2.5\" fill=\"#7FB3A3\" opacity=\".85\"/></g><rect x=\"76\" y=\"178\" width=\"108\" height=\"13\" rx=\"3\" fill=\"#3A3128\" stroke=\"#4F4234\"/><rect x=\"82\" y=\"191\" width=\"4\" height=\"10\" fill=\"#2A241D\"/><rect x=\"174\" y=\"191\" width=\"4\" height=\"10\" fill=\"#2A241D\"/><rect x=\"124\" y=\"175\" width=\"22\" height=\"4\" rx=\"1\" fill=\"#2F2B26\"/><rect x=\"155\" y=\"170\" width=\"4\" height=\"8\" fill=\"#2B2925\"/><rect x=\"136\" y=\"141\" width=\"42\" height=\"30\" rx=\"3\" fill=\"#0C0C0B\" stroke=\"#34302A\"/><rect x=\"139\" y=\"144\" width=\"36\" height=\"23\" rx=\"1.5\" fill=\"#0A0A09\"/><circle cx=\"157\" cy=\"155.5\" r=\"2\" fill=\"#C9A24B\" opacity=\".25\"/><rect x=\"84\" y=\"169\" width=\"8\" height=\"9\" rx=\"2\" fill=\"#EFEBE2\" opacity=\".75\"/><path d=\"M92 171 q4 0 4 3 q0 3 -4 3\" fill=\"none\" stroke=\"#EFEBE2\" stroke-width=\"1.2\" opacity=\".75\"/></g><text x=\"130\" y=\"228\" text-anchor=\"middle\" font-size=\"17\" font-weight=\"700\" fill=\"#EFEBE2\" stroke=\"#161513\" stroke-width=\"5\" stroke-linejoin=\"round\" paint-order=\"stroke\">QA</text><text x=\"130\" y=\"249\" text-anchor=\"middle\" font-size=\"14\" font-weight=\"500\" fill=\"#6F695F\" stroke=\"#161513\" stroke-width=\"5\" stroke-linejoin=\"round\" paint-order=\"stroke\">● livre <tspan fill=\"#7FB3A3\">· Haiku</tspan></text></g><g opacity=\"0.55\"><g transform=\"translate(630 178) scale(1.35) translate(-630 -178)\"><rect x=\"595\" y=\"134\" width=\"36\" height=\"40\" rx=\"9\" fill=\"#2A2824\"/><g class=\"\"><rect x=\"599\" y=\"149\" width=\"28\" height=\"32\" rx=\"11\" fill=\"#7FB3A3\"/><g class=\"\"><circle cx=\"613\" cy=\"138\" r=\"11\" fill=\"#8D5E3C\"/><path d=\"M602 137 a11 11 0 0 1 22 0 q-12 -5 -22 0z\" fill=\"#5B3A29\"/><path d=\"M614 138 h4 M620 138 h4\" stroke=\"#1A1712\" stroke-width=\"1.4\" stroke-linecap=\"round\"/></g><rect class=\"\" x=\"617\" y=\"165\" width=\"18\" height=\"5\" rx=\"2.5\" fill=\"#7FB3A3\" opacity=\".85\"/><rect class=\"\" x=\"615\" y=\"170\" width=\"20\" height=\"5\" rx=\"2.5\" fill=\"#7FB3A3\" opacity=\".85\"/></g><rect x=\"576\" y=\"178\" width=\"108\" height=\"13\" rx=\"3\" fill=\"#3A3128\" stroke=\"#4F4234\"/><rect x=\"582\" y=\"191\" width=\"4\" height=\"10\" fill=\"#2A241D\"/><rect x=\"674\" y=\"191\" width=\"4\" height=\"10\" fill=\"#2A241D\"/><rect x=\"624\" y=\"175\" width=\"22\" height=\"4\" rx=\"1\" fill=\"#2F2B26\"/><rect x=\"655\" y=\"170\" width=\"4\" height=\"8\" fill=\"#2B2925\"/><rect x=\"636\" y=\"141\" width=\"42\" height=\"30\" rx=\"3\" fill=\"#0C0C0B\" stroke=\"#34302A\"/><rect x=\"639\" y=\"144\" width=\"36\" height=\"23\" rx=\"1.5\" fill=\"#0A0A09\"/><circle cx=\"657\" cy=\"155.5\" r=\"2\" fill=\"#C9A24B\" opacity=\".25\"/><rect x=\"584\" y=\"169\" width=\"8\" height=\"9\" rx=\"2\" fill=\"#EFEBE2\" opacity=\".75\"/><path d=\"M592 171 q4 0 4 3 q0 3 -4 3\" fill=\"none\" stroke=\"#EFEBE2\" stroke-width=\"1.2\" opacity=\".75\"/></g><text x=\"630\" y=\"228\" text-anchor=\"middle\" font-size=\"17\" font-weight=\"700\" fill=\"#EFEBE2\" stroke=\"#161513\" stroke-width=\"5\" stroke-linejoin=\"round\" paint-order=\"stroke\">Documentador</text><text x=\"630\" y=\"249\" text-anchor=\"middle\" font-size=\"14\" font-weight=\"500\" fill=\"#6F695F\" stroke=\"#161513\" stroke-width=\"5\" stroke-linejoin=\"round\" paint-order=\"stroke\">● livre <tspan fill=\"#7FB3A3\">· Haiku</tspan></text></g><g opacity=\"0.55\"><g transform=\"translate(130 376) scale(1.35) translate(-130 -376)\"><rect x=\"95\" y=\"332\" width=\"36\" height=\"40\" rx=\"9\" fill=\"#2A2824\"/><g class=\"\"><rect x=\"99\" y=\"347\" width=\"28\" height=\"32\" rx=\"11\" fill=\"#E16B01\"/><g class=\"\"><circle cx=\"113\" cy=\"336\" r=\"11\" fill=\"#C99B73\"/><path d=\"M102 335 a11 11 0 0 1 22 0 q-12 -5 -22 0z\" fill=\"#1F1B18\"/><path d=\"M114 336 h4 M120 336 h4\" stroke=\"#1A1712\" stroke-width=\"1.4\" stroke-linecap=\"round\"/></g><rect class=\"\" x=\"117\" y=\"363\" width=\"18\" height=\"5\" rx=\"2.5\" fill=\"#E16B01\" opacity=\".85\"/><rect class=\"\" x=\"115\" y=\"368\" width=\"20\" height=\"5\" rx=\"2.5\" fill=\"#E16B01\" opacity=\".85\"/></g><rect x=\"76\" y=\"376\" width=\"108\" height=\"13\" rx=\"3\" fill=\"#3A3128\" stroke=\"#4F4234\"/><rect x=\"82\" y=\"389\" width=\"4\" height=\"10\" fill=\"#2A241D\"/><rect x=\"174\" y=\"389\" width=\"4\" height=\"10\" fill=\"#2A241D\"/><rect x=\"124\" y=\"373\" width=\"22\" height=\"4\" rx=\"1\" fill=\"#2F2B26\"/><rect x=\"155\" y=\"368\" width=\"4\" height=\"8\" fill=\"#2B2925\"/><rect x=\"136\" y=\"339\" width=\"42\" height=\"30\" rx=\"3\" fill=\"#0C0C0B\" stroke=\"#34302A\"/><rect x=\"139\" y=\"342\" width=\"36\" height=\"23\" rx=\"1.5\" fill=\"#0A0A09\"/><circle cx=\"157\" cy=\"353.5\" r=\"2\" fill=\"#C9A24B\" opacity=\".25\"/><rect x=\"84\" y=\"367\" width=\"8\" height=\"9\" rx=\"2\" fill=\"#EFEBE2\" opacity=\".75\"/><path d=\"M92 369 q4 0 4 3 q0 3 -4 3\" fill=\"none\" stroke=\"#EFEBE2\" stroke-width=\"1.2\" opacity=\".75\"/></g><text x=\"130\" y=\"426\" text-anchor=\"middle\" font-size=\"17\" font-weight=\"700\" fill=\"#EFEBE2\" stroke=\"#161513\" stroke-width=\"5\" stroke-linejoin=\"round\" paint-order=\"stroke\">Dev Backend</text><text x=\"130\" y=\"447\" text-anchor=\"middle\" font-size=\"14\" font-weight=\"500\" fill=\"#6F695F\" stroke=\"#161513\" stroke-width=\"5\" stroke-linejoin=\"round\" paint-order=\"stroke\">● livre <tspan fill=\"#E16B01\">· Sonnet</tspan></text></g><g opacity=\"1\"><g transform=\"translate(380 376) scale(1.35) translate(-380 -376)\"><ellipse class=\"glow\" cx=\"380\" cy=\"382\" rx=\"74\" ry=\"20\" fill=\"#D9CFBF\"/><rect x=\"345\" y=\"332\" width=\"36\" height=\"40\" rx=\"9\" fill=\"#2A2824\"/><g class=\"\"><rect x=\"349\" y=\"347\" width=\"28\" height=\"32\" rx=\"11\" fill=\"#E16B01\"/><g class=\"nod\"><circle cx=\"363\" cy=\"336\" r=\"11\" fill=\"#F0D5B8\"/><path d=\"M352 335 a11 11 0 0 1 22 0 q-12 -5 -22 0z\" fill=\"#8A4B2A\"/><circle cx=\"366\" cy=\"336\" r=\"1.5\" fill=\"#1A1712\"/><circle cx=\"371.5\" cy=\"336\" r=\"1.5\" fill=\"#1A1712\"/></g><rect class=\"\" x=\"367\" y=\"363\" width=\"18\" height=\"5\" rx=\"2.5\" fill=\"#E16B01\" opacity=\".85\"/><rect class=\"\" x=\"365\" y=\"368\" width=\"20\" height=\"5\" rx=\"2.5\" fill=\"#E16B01\" opacity=\".85\"/></g><rect x=\"326\" y=\"376\" width=\"108\" height=\"13\" rx=\"3\" fill=\"#3A3128\" stroke=\"#4F4234\"/><rect x=\"332\" y=\"389\" width=\"4\" height=\"10\" fill=\"#2A241D\"/><rect x=\"424\" y=\"389\" width=\"4\" height=\"10\" fill=\"#2A241D\"/><rect x=\"374\" y=\"373\" width=\"22\" height=\"4\" rx=\"1\" fill=\"#2F2B26\"/><rect x=\"405\" y=\"368\" width=\"4\" height=\"8\" fill=\"#2B2925\"/><rect x=\"386\" y=\"339\" width=\"42\" height=\"30\" rx=\"3\" fill=\"#0C0C0B\" stroke=\"#34302A\"/><rect x=\"389\" y=\"342\" width=\"36\" height=\"23\" rx=\"1.5\" fill=\"#1B2430\"/><circle class=\"d1\" cx=\"400\" cy=\"354\" r=\"2\" fill=\"#D9CFBF\"/><circle class=\"d2\" cx=\"407\" cy=\"354\" r=\"2\" fill=\"#D9CFBF\"/><circle class=\"d3\" cx=\"414\" cy=\"354\" r=\"2\" fill=\"#D9CFBF\"/><g class=\"float\"><rect x=\"361\" y=\"294\" width=\"34\" height=\"20\" rx=\"8\" fill=\"#23211D\" stroke=\"#D9CFBF\" stroke-width=\"1.2\"/><path d=\"M369 314 l-3 6 l8 -6z\" fill=\"#23211D\" stroke=\"#D9CFBF\" stroke-width=\"1.2\" stroke-linejoin=\"round\"/><rect x=\"366\" y=\"312\" width=\"10\" height=\"3\" fill=\"#23211D\"/><circle class=\"d1\" cx=\"371\" cy=\"304\" r=\"2.2\" fill=\"#D9CFBF\"/><circle class=\"d2\" cx=\"378\" cy=\"304\" r=\"2.2\" fill=\"#D9CFBF\"/><circle class=\"d3\" cx=\"385\" cy=\"304\" r=\"2.2\" fill=\"#D9CFBF\"/></g></g><text x=\"380\" y=\"426\" text-anchor=\"middle\" font-size=\"17\" font-weight=\"700\" fill=\"#EFEBE2\" stroke=\"#161513\" stroke-width=\"5\" stroke-linejoin=\"round\" paint-order=\"stroke\">Dev Frontend</text><text x=\"380\" y=\"447\" text-anchor=\"middle\" font-size=\"14\" font-weight=\"500\" fill=\"#D9CFBF\" stroke=\"#161513\" stroke-width=\"5\" stroke-linejoin=\"round\" paint-order=\"stroke\">● pensando <tspan fill=\"#E16B01\">· Sonnet</tspan></text></g><g opacity=\"0.55\"><g transform=\"translate(630 376) scale(1.35) translate(-630 -376)\"><rect x=\"595\" y=\"332\" width=\"36\" height=\"40\" rx=\"9\" fill=\"#2A2824\"/><g class=\"\"><rect x=\"599\" y=\"347\" width=\"28\" height=\"32\" rx=\"11\" fill=\"#E16B01\"/><g class=\"\"><circle cx=\"613\" cy=\"336\" r=\"11\" fill=\"#A8764F\"/><path d=\"M602 335 a11 11 0 0 1 22 0 q-12 -5 -22 0z\" fill=\"#4A4A4A\"/><path d=\"M614 336 h4 M620 336 h4\" stroke=\"#1A1712\" stroke-width=\"1.4\" stroke-linecap=\"round\"/></g><rect class=\"\" x=\"617\" y=\"363\" width=\"18\" height=\"5\" rx=\"2.5\" fill=\"#E16B01\" opacity=\".85\"/><rect class=\"\" x=\"615\" y=\"368\" width=\"20\" height=\"5\" rx=\"2.5\" fill=\"#E16B01\" opacity=\".85\"/></g><rect x=\"576\" y=\"376\" width=\"108\" height=\"13\" rx=\"3\" fill=\"#3A3128\" stroke=\"#4F4234\"/><rect x=\"582\" y=\"389\" width=\"4\" height=\"10\" fill=\"#2A241D\"/><rect x=\"674\" y=\"389\" width=\"4\" height=\"10\" fill=\"#2A241D\"/><rect x=\"624\" y=\"373\" width=\"22\" height=\"4\" rx=\"1\" fill=\"#2F2B26\"/><rect x=\"655\" y=\"368\" width=\"4\" height=\"8\" fill=\"#2B2925\"/><rect x=\"636\" y=\"339\" width=\"42\" height=\"30\" rx=\"3\" fill=\"#0C0C0B\" stroke=\"#34302A\"/><rect x=\"639\" y=\"342\" width=\"36\" height=\"23\" rx=\"1.5\" fill=\"#0A0A09\"/><circle cx=\"657\" cy=\"353.5\" r=\"2\" fill=\"#C9A24B\" opacity=\".25\"/><rect x=\"584\" y=\"367\" width=\"8\" height=\"9\" rx=\"2\" fill=\"#EFEBE2\" opacity=\".75\"/><path d=\"M592 369 q4 0 4 3 q0 3 -4 3\" fill=\"none\" stroke=\"#EFEBE2\" stroke-width=\"1.2\" opacity=\".75\"/></g><text x=\"630\" y=\"426\" text-anchor=\"middle\" font-size=\"17\" font-weight=\"700\" fill=\"#EFEBE2\" stroke=\"#161513\" stroke-width=\"5\" stroke-linejoin=\"round\" paint-order=\"stroke\">Dev Infra</text><text x=\"630\" y=\"447\" text-anchor=\"middle\" font-size=\"14\" font-weight=\"500\" fill=\"#6F695F\" stroke=\"#161513\" stroke-width=\"5\" stroke-linejoin=\"round\" paint-order=\"stroke\">● livre <tspan fill=\"#E16B01\">· Sonnet</tspan></text></g></svg>",
+ "busy": 2,
+ "waiting": 0,
+ "tokens": 150000,
+ "agents": [
+  {
+   "key": "lead",
+   "title": "Tech Lead",
+   "model": "Opus",
+   "activity": "delegando",
+   "label": "delegando",
+   "color": "#C9A24B",
+   "detail": "→ filtro por período",
+   "task": "",
+   "taskStart": 1791473666845,
+   "tokens": 150000,
+   "temp": false,
+   "trail": []
+  },
+  {
+   "key": "qa",
+   "title": "QA",
+   "model": "Haiku",
+   "activity": "livre",
+   "label": "livre",
+   "color": "#6F695F",
+   "detail": "",
+   "task": "",
+   "taskStart": 0,
+   "tokens": 0,
+   "temp": false,
+   "trail": []
+  },
+  {
+   "key": "documentador",
+   "title": "Documentador",
+   "model": "Haiku",
+   "activity": "livre",
+   "label": "livre",
+   "color": "#6F695F",
+   "detail": "",
+   "task": "",
+   "taskStart": 0,
+   "tokens": 0,
+   "temp": false,
+   "trail": []
+  },
+  {
+   "key": "dev-backend",
+   "title": "Dev Backend",
+   "model": "Sonnet",
+   "activity": "livre",
+   "label": "livre",
+   "color": "#6F695F",
+   "detail": "",
+   "task": "",
+   "taskStart": 0,
+   "tokens": 0,
+   "temp": false,
+   "trail": []
+  },
+  {
+   "key": "f1",
+   "title": "Dev Frontend",
+   "model": "Sonnet",
+   "activity": "pensando",
+   "label": "pensando",
+   "color": "#D9CFBF",
+   "detail": "",
+   "task": "Filtrar o extrato por período",
+   "taskStart": 1791474206845,
+   "tokens": 0,
+   "temp": false,
+   "trail": [
+    {
+     "op": "leu",
+     "what": "ExtratoScreen.tsx"
+    },
+    {
+     "op": "editou",
+     "what": "FiltroPeriodo.tsx"
+    }
+   ]
+  },
+  {
+   "key": "dev-infra",
+   "title": "Dev Infra",
+   "model": "Sonnet",
+   "activity": "livre",
+   "label": "livre",
+   "color": "#6F695F",
+   "detail": "",
+   "task": "",
+   "taskStart": 0,
+   "tokens": 0,
+   "temp": false,
+   "trail": []
+  }
+ ],
+ "log": [
+  {
+   "at": 1791474176845,
+   "text": "Tech Lead → Dev Frontend (Sonnet): Filtro de período do extrato"
+  }
+ ],
+ "daily": {
+  "date": "2026-10-08",
+  "roles": [
+   {
+    "role": "Tech Lead",
+    "tasks": 4,
+    "ms": 2400000,
+    "tokens": 180000
+   },
+   {
+    "role": "Dev Backend",
+    "tasks": 3,
+    "ms": 900000,
+    "tokens": 95000
+   }
+  ]
+ }
+}

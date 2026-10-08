@@ -1,0 +1,8 @@
+{
+  "name": "sala-agentes",
+  "version": "0.6.0",
+  "description": "Squadesk · Sala dos Agentes: painel ao vivo com o Tech Lead e os subagentes do Claude Code trabalhando, cada um na sua mesa",
+  "author": { "name": "Squadesk" },
+  "license": "MIT",
+  "types": "./types/index.d.ts"
+}

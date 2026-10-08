@@ -1,0 +1,9 @@
+node_modules/
+plugin/.claude-plugin/types/
+plugin/tsconfig.json
+*.log
+dist/
+skill/sala-agentes/assets/plugin/
+
+# Prints do QA com dados reais dos chats (e a chave do painel): ficam só no PC
+docs/prints/qa-*
