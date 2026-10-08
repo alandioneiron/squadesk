@@ -17,30 +17,31 @@ Painel ao vivo dos agentes do Claude Code. O Tech Lead e os subagentes aparecem 
 |---|---|
 | ![Mosaico 4](docs/prints/mosaico-4.png) | ![TV](docs/prints/tv.png) |
 
-## Instalar
+## Manual
 
-Requisitos:
-- Claude Code (CLI ou app desktop) com suporte a plugins de function hooks;
-- Node 18+, para o instalador e o painel web.
+O **[manual completo](docs/MANUAL.md)** explica como funciona, como instalar no Windows, no macOS e no Linux, como ativar cada recurso, onde fica cada arquivo e o que fazer quando algo não funciona.
 
-**Com a skill (recomendado):**
-1. Gere o pacote com `node scripts/gerar-skill.mjs`, que cria `dist/sala-agentes.skill`.
-2. Instale a skill de um destes jeitos:
-   - no claude.ai: Configurações → Capacidades → Skills;
-   - no Claude Code: descompacte o pacote em `~/.claude/skills/sala-agentes/`.
-3. Num chat, peça: "instala a sala dos agentes".
+## Instalar em 1 minuto
 
-**À mão:**
-1. Copie a pasta `plugin/` para `~/.claude/mods/sala-agentes/`.
-2. Em `~/.claude/settings.json`, dentro de `"env"`, acrescente:
-   ```json
-   "CLAUDE_CODE_PLUGIN_DIRS": "<pasta pessoal>/.claude/mods/sala-agentes",
-   "CLAUDE_CODE_PLUGIN_DIR_WATCH": "1"
-   ```
-3. Abra um chat novo e digite `/sala`.
-4. Opcional: ligue o painel web com `node ~/.claude/mods/sala-agentes/web/server.mjs`. O link com a chave fica em `~/.claude/sala-agentes/web.json`, ou aparece em `/sala painel`.
+Você precisa do Claude Code (CLI ou app desktop) e do [Node.js](https://nodejs.org) 18 ou mais novo.
+
+```bash
+git clone https://github.com/alandioneiron/squadesk.git
+cd squadesk
+node skill/sala-agentes/scripts/instalar.mjs --painel
+```
+
+Depois, **abra um chat novo** no Claude Code: a sala aparece sozinha. Se não aparecer, digite `/sala`. O instalador mostra o link do painel web e também pode ser rodado com `--verificar` (só mostra o estado), `--simular` ou `--desinstalar`.
+
+Há outros dois caminhos, ambos explicados no [manual](docs/MANUAL.md#3-instalação):
+- **instalação guiada pela skill:** pergunta quantas mesas a equipe terá e o segmento de cada uma;
+- **instalação à mão:** sem Node, copiando uma pasta e editando o `settings.json`.
+
+Nos caminhos, `~` é a sua pasta pessoal: `C:\Users\<você>` no Windows, `/Users/<você>` no macOS, `/home/<você>` no Linux. O plugin fica em `~/.claude/mods/sala-agentes/`.
 
 ## Usar
+
+Como ligar, usar e desligar cada recurso (sala, mesas, guia automático, avisos, resumo, painel web) está na [seção 5 do manual](docs/MANUAL.md#5-recursos-e-como-ativar-cada-um).
 
 | Comando | O que faz |
 |---|---|
@@ -91,6 +92,7 @@ O `publicar.mjs` valida, testa e só então copia o plugin para `~/.claude/mods/
 - **Onde editar:** só em `plugin/`. Todos os chats recarregam da pasta instalada, e um arquivo salvo pela metade quebraria a sala em todos eles.
 - **Versão:** suba `version` em `plugin/.claude-plugin/plugin.json` a cada entrega; o rodapé da sala mostra a versão de cada chat.
 - **Painel:** se `web/server.mjs` mudar, reinicie o painel.
+- **Pacote da skill:** `node scripts/gerar-skill.mjs` gera `dist/sala-agentes.skill` (precisa de Python 3).
 
 ## Licença
 

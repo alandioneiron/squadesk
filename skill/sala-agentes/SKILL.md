@@ -14,7 +14,7 @@ A Sala dos Agentes é um plugin do Claude Code com três partes:
 | Equipe | As mesas: nome, modelo e palavras que puxam tarefas para cada uma | `~/.claude/sala-agentes.json` (toda a conta) ou `<projeto>/.claude/sala-agentes.json` (um projeto) |
 | Painel web (opcional) | Página com as salas de todos os chats, para ver no PC, no celular ou na TV da rede | `~/.claude/sala-agentes/` (link e chave no `web.json`) |
 
-Nos comandos abaixo, `<SKILL_DIR>` é a pasta desta skill: a "Base directory" mostrada quando ela carregou. Os arquivos do plugin estão em `<SKILL_DIR>/assets/plugin/` e o instalador é `<SKILL_DIR>/scripts/instalar.mjs`.
+Nos comandos abaixo, `<SKILL_DIR>` é a pasta desta skill: a "Base directory" mostrada quando ela carregou. Os arquivos do plugin estão em `<SKILL_DIR>/assets/plugin/` no pacote `.skill`. Num clone do repositório, essa pasta não existe e o instalador usa `plugin/` da raiz. O instalador é `<SKILL_DIR>/scripts/instalar.mjs`. O manual para pessoas está em `docs/MANUAL.md` do repositório.
 
 ## 1. Ver o estado
 
@@ -157,7 +157,7 @@ O instalador e o painel precisam do Node 18+. Sem ele, ofereça duas saídas. O 
 **Opção A, recomendada:** o usuário instala o Node LTS de nodejs.org e você roda o instalador depois. Não baixe nem execute instaladores por ele.
 
 **Opção B:** a instalação à mão, só do plugin e da equipe, com as ferramentas de arquivo:
-1. Copiar `<SKILL_DIR>/assets/plugin/` inteira para `~/.claude/mods/sala-agentes/`.
+1. Copiar `<SKILL_DIR>/assets/plugin/` inteira (num clone, a pasta `plugin/` da raiz) para `~/.claude/mods/sala-agentes/`.
 2. No `~/.claude/settings.json`, guardar uma cópia e, dentro de `"env"`:
    - incluir `"CLAUDE_CODE_PLUGIN_DIRS"` com o caminho absoluto dessa pasta. Se já existir, acrescente com `;` no Windows ou `:` nos outros sistemas;
    - incluir `"CLAUDE_CODE_PLUGIN_DIR_WATCH": "1"`;

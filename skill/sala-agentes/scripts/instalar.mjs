@@ -2,7 +2,8 @@
 // Instalador da skill portátil "sala-agentes" (Sala dos Agentes, plugin do Claude Code).
 //
 // O que faz (resumo; detalhes em --ajuda):
-//   1. copia o plugin (../assets/plugin) para ~/.claude/mods/sala-agentes
+//   1. copia o plugin para ~/.claude/mods/sala-agentes. A origem é a pasta ../assets/plugin (pacote .skill) ou,
+//      num clone do repositório, a pasta plugin/ da raiz (só os arquivos que o pacote levaria)
 //   2. põe essa pasta no CLAUDE_CODE_PLUGIN_DIRS do ~/.claude/settings.json (e liga o recarregamento automático)
 //   3. grava a equipe (opcional), na conta ou num projeto
 //   4. liga o painel web (opcional) e, no Windows, o atalho de inicialização
@@ -35,7 +36,15 @@ const INSTALL_JSON = path.join(SALA_DIR, 'instalacao.json')
 const VBS_LOCAL = path.join(SALA_DIR, 'start-painel.vbs')
 const PID_FILE = path.join(SALA_DIR, 'painel.pid') // PID do painel que o instalador subiu
 const SERVER_DEST = path.join(PLUGIN_DEST, 'web', 'server.mjs')
-const PKG_PLUGIN = path.resolve(fileURLToPath(new URL('../assets/plugin/', import.meta.url)))
+const MANIFESTO = '.claude-plugin/plugin.json'
+
+// De onde vem o plugin: do pacote .skill (assets/plugin, gerado por scripts/gerar-skill.mjs) ou, quando essa pasta
+// não existe (clone do repositório, onde ela fica fora do git), da pasta plugin/ na raiz do clone.
+const PKG_EMBUTIDO = path.resolve(fileURLToPath(new URL('../assets/plugin/', import.meta.url)))
+const PKG_CLONE = path.resolve(fileURLToPath(new URL('../../../plugin/', import.meta.url)))
+const DO_CLONE = !fs.existsSync(path.join(PKG_EMBUTIDO, MANIFESTO)) && fs.existsSync(path.join(PKG_CLONE, MANIFESTO))
+const PKG_PLUGIN = DO_CLONE ? PKG_CLONE : PKG_EMBUTIDO
+const PKG_ORIGEM = DO_CLONE ? 'clone do repositório' : 'pacote da skill'
 const PKG_SERVER = path.join(PKG_PLUGIN, 'web', 'server.mjs')
 
 // Com SALA_HOME definida, nunca usa o APPDATA verdadeiro: a pasta Inicializar de teste fica dentro dela.
@@ -52,7 +61,10 @@ const STARTUP_VBS = STARTUP_DIR ? path.join(STARTUP_DIR, 'sala-agentes-painel.vb
 const VAR_DIRS = 'CLAUDE_CODE_PLUGIN_DIRS'
 const VAR_WATCH = 'CLAUDE_CODE_PLUGIN_DIR_WATCH'
 const PASTAS_DO_PLUGIN = ['hooks', 'types', 'web', '.claude-plugin'] // as que o instalador limpa antes de copiar
-const MANIFESTO = '.claude-plugin/plugin.json'
+// Do clone só vai o que o pacote levaria (mesmo filtro do scripts/gerar-skill.mjs; mantenha os dois iguais):
+// o manifesto, hooks/**, types/** e web/** menos web/sample/. Nunca tests/, tsconfig.json nem .claude-plugin/types/.
+const PASTAS_DO_CLONE = ['hooks', 'types', 'web']
+const PULAR_NO_CLONE = ['web/sample/']
 const PORTA_PADRAO = 8787
 const MAX_MESAS = 11
 
@@ -201,6 +213,23 @@ function listar(raiz) {
   return saida.sort()
 }
 
+/**
+ * Arquivos do plugin que o instalador copia (caminhos relativos com "/"). No pacote .skill é a pasta inteira
+ * (o gerar-skill.mjs já filtrou); no clone do repositório aplica o mesmo filtro do pacote.
+ */
+function listarPacote() {
+  if (!DO_CLONE) return listar(PKG_PLUGIN)
+  const saida = existe(path.join(PKG_PLUGIN, MANIFESTO)) ? [MANIFESTO] : []
+  for (const pasta of PASTAS_DO_CLONE) {
+    for (const rel of listar(path.join(PKG_PLUGIN, pasta))) {
+      const completo = `${pasta}/${rel}`
+      if (PULAR_NO_CLONE.some((p) => completo.startsWith(p))) continue
+      saida.push(completo)
+    }
+  }
+  return saida.sort()
+}
+
 /** Apaga as pastas vazias de dentro de `dir` (e a própria `dir` se `incluirRaiz`). Nunca apaga arquivo. */
 function removerPastasVazias(dir, incluirRaiz) {
   if (!ehPasta(dir) || linkDaPasta(dir)) return
@@ -329,10 +358,17 @@ function mostrarEquipe(raw, recuo = '  ') {
 function lerPacote(precisaServidor) {
   const manifesto = path.join(PKG_PLUGIN, MANIFESTO)
   if (!ehPasta(PKG_PLUGIN) || !existe(manifesto) || !existe(path.join(PKG_PLUGIN, 'hooks', 'hooks.json'))) {
-    throw new Sair(1, `O pacote da skill está incompleto: não achei o plugin em ${PKG_PLUGIN}.`, 'Gere o pacote de novo (node scripts/gerar-skill.mjs) ou baixe a skill outra vez.')
+    throw new Sair(
+      1,
+      `Não achei o plugin para instalar (${PKG_ORIGEM}: ${PKG_PLUGIN}).`,
+      'O instalador procura em dois lugares:',
+      `  - no pacote da skill: ${PKG_EMBUTIDO}`,
+      `  - num clone do repositório: ${PKG_CLONE}`,
+      'Rode-o de dentro do pacote .skill completo ou de um clone inteiro do repositório (ou gere o pacote de novo: node scripts/gerar-skill.mjs).',
+    )
   }
   if (precisaServidor && !existe(path.join(PKG_PLUGIN, 'web', 'server.mjs'))) {
-    throw new Sair(1, 'O pacote da skill está sem o painel web (web/server.mjs).')
+    throw new Sair(1, `O plugin (${PKG_ORIGEM}) está sem o painel web (web/server.mjs).`)
   }
   let versao
   try {
@@ -356,7 +392,7 @@ function versaoInstalada() {
  * pastas que o instalador cuida). O que sobra só é listado: o instalador nunca apaga arquivo que não é do pacote.
  */
 function planoDoPlugin() {
-  const pacote = listar(PKG_PLUGIN)
+  const pacote = listarPacote()
   const noPacote = new Set(pacote)
   const copiar = pacote.filter((rel) => {
     const destino = path.join(PLUGIN_DEST, rel)
@@ -796,6 +832,16 @@ const AJUDA = `Instalador da Sala dos Agentes (plugin do Claude Code)
 
 Uso: node instalar.mjs [opções]
 
+Dois jeitos de rodar (o plugin é achado sozinho; a saída diz de onde veio):
+  - De dentro do pacote .skill (extraído):   node sala-agentes/scripts/instalar.mjs [opções]
+    Usa a pasta assets/plugin do pacote.
+  - De um clone do repositório (raiz do clone): node skill/sala-agentes/scripts/instalar.mjs [opções]
+    Sem assets/plugin, usa a pasta plugin/ da raiz do clone (só o que o pacote levaria: sem tests/ nem web/sample/).
+
+Exemplo mínimo (instala o plugin e liga o painel web):
+  node skill/sala-agentes/scripts/instalar.mjs --painel
+
+Opções:
   --verificar                 Só mostra o estado e não muda nada: Node, versão instalada x versão do pacote,
                               variáveis no settings.json, equipe da conta e do projeto, painel e atalho.
   --simular                   Faz toda a análise e diz o que mudaria, sem gravar nada.
@@ -834,7 +880,7 @@ async function verificar(o) {
   let pacote = null
   try {
     pacote = lerPacote(false)
-    info(`Versão do pacote: ${pacote.versao}`)
+    info(`Versão do pacote: ${pacote.versao}  (origem: ${PKG_ORIGEM}, ${PKG_PLUGIN})`)
   } catch (e) {
     aviso(e.linhas ? e.linhas[0] : e.message)
   }
@@ -1045,6 +1091,7 @@ async function instalar(o) {
 
   // ── Análise: nada é gravado aqui. Qualquer problema para antes de mexer em algo.
   const pacote = lerPacote(Boolean(o.painel))
+  info(`Origem do plugin: ${PKG_ORIGEM} (${PKG_PLUGIN})`)
   const alvoDoLink = linkDaPasta(PLUGIN_DEST)
   if (alvoDoLink) {
     throw new Sair(
@@ -1120,7 +1167,7 @@ async function instalar(o) {
         throw new Sair(1, `Não consegui copiar o plugin: ${e.message}`, 'Pode ter ficado pela metade; rode o instalador de novo.')
       }
     }
-    marca(`plugin ${inst === null ? 'instalado' : 'atualizado'} em ${PLUGIN_DEST} (${plano.copiar.length} arquivo(s) copiado(s))`)
+    marca(`plugin ${inst === null ? 'instalado' : 'atualizado'} em ${PLUGIN_DEST} (${plano.copiar.length} arquivo(s) copiado(s) do ${PKG_ORIGEM})`)
   }
   if (plano.sobrando.length > 0) ficaram.push(...plano.sobrando)
 
@@ -1400,7 +1447,7 @@ const relativoSeguro = (r) => typeof r === 'string' && r !== '' && !path.isAbsol
 
 /** Arquivos que o instalador põe na pasta do plugin: os do pacote e os do registro da última instalação. */
 function arquivosDoInstalador(registro) {
-  const conhecidos = new Set(ehPasta(PKG_PLUGIN) ? listar(PKG_PLUGIN) : [])
+  const conhecidos = new Set(ehPasta(PKG_PLUGIN) ? listarPacote() : [])
   if (Array.isArray(registro.arquivos)) for (const r of registro.arquivos) if (relativoSeguro(r)) conhecidos.add(r.replace(/\\/g, '/'))
   return conhecidos
 }

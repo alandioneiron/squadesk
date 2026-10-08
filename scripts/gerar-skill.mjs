@@ -9,6 +9,8 @@
 // 3. Mostra o caminho e o tamanho do .skill e a versão do plugin empacotada.
 //
 // A fonte do plugin é plugin/ deste repositório; a pasta assets/plugin é gerada e não vai para o git.
+// O filtro do que entra no pacote (manifesto + hooks/ + types/ + web/ menos web/sample/) também existe em
+// skill/sala-agentes/scripts/instalar.mjs (listarPacote), para instalar direto de um clone: mude os dois juntos.
 
 import { spawnSync } from 'node:child_process'
 import fs from 'node:fs'
