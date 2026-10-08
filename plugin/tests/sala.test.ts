@@ -2,8 +2,8 @@ import { expect, mock, test } from 'claude-code/testing'
 import type { On } from 'claude-code'
 
 import type { AgentRow } from '../types'
-import { pickTitle } from '../hooks/live'
-import { activityFor, detailFor, emptyLead, fmtDuration, fmtTokens, roster, trailText } from '../hooks/room'
+import { pickTitle, today } from '../hooks/live'
+import { activityFor, detailFor, emptyLead, fmtDuration, fmtTime, fmtTokens, localZone, roster, trailText, validZone } from '../hooks/room'
 import {
   addRoleTo,
   defaultTeam,
@@ -480,6 +480,36 @@ test('aprovação: avisa e devolve o personagem ao trabalho quando a ferramenta 
   release()
   await running
   await pane.unmount()
+})
+
+test('fuso: a data e a hora seguem o fuso do sistema, e UTC quando ele não vale', async () => {
+  // O fuso do sistema (o Intl é imutável no runtime, então não dá para trocá-lo aqui) é um nome que
+  // o Intl aceita, e a data e a hora padrão batem com ele.
+  const zone = localZone()
+  expect(zone).not.toBe('')
+  expect(validZone(zone)).toBe(zone)
+  expect(zone).toBe(validZone(Intl.DateTimeFormat().resolvedOptions().timeZone))
+  const at = Date.UTC(2026, 0, 1, 12, 0)
+  expect(today(at)).toBe(today(at, zone))
+  expect(fmtTime(at)).toBe(fmtTime(at, zone))
+  expect(today(at)).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+  expect(fmtTime(at)).toMatch(/^\d{2}:\d{2}$/)
+
+  // 23:30 UTC de 31/12 já é 01/01 em Tóquio (08:30) e ainda é 31/12 em Brasília (20:30).
+  const late = Date.UTC(2026, 11, 31, 23, 30)
+  expect(validZone('Asia/Tokyo')).toBe('Asia/Tokyo')
+  expect(today(late, 'Asia/Tokyo')).toBe('2027-01-01')
+  expect(fmtTime(late, 'Asia/Tokyo')).toBe('08:30')
+  expect(today(late, 'America/Sao_Paulo')).toBe('2026-12-31')
+  expect(fmtTime(late, 'America/Sao_Paulo')).toBe('20:30')
+
+  // Vazio, ausente ou inválido: UTC.
+  for (const bad of ['', '   ', 'Marte/Olympus', undefined, null, 3]) {
+    const fallback = validZone(bad)
+    expect(fallback).toBe('UTC')
+    expect(today(late, fallback)).toBe('2026-12-31')
+    expect(fmtTime(late, fallback)).toBe('23:30')
+  }
 })
 
 test('título do chat: o renomeado vence o gerado, linhas estranhas são ignoradas', async () => {

@@ -51,18 +51,24 @@ Claude Code ──carrega──▶ plugin (pasta indicada em CLAUDE_CODE_PLUGIN_
    │                         │
    │ eventos do chat         ├─▶ desenha a sala no painel /sala
    │ (pedido, ferramentas,   ├─▶ põe o guia da equipe no começo de cada conversa
-   │  subagentes, aprovação) └─▶ grava um "retrato" do chat a cada 1,5 s em
+   │  subagentes, aprovação) └─▶ grava um "retrato" do chat quando algo muda
+   │                              (no máximo a cada 1,5 s; a cada 60 s se parado) em
    │                              ~/.claude/sala-agentes/live/<chat>.json
    │                                        │
    └────────────────────────────────────────┴──▶ painel web lê os retratos
                                                  e mostra todos os chats
 ```
 
-Nada vai para a internet. O plugin só grava arquivos na sua pasta pessoal, e o painel web é um servidor local que você liga se quiser.
+Nada vai para a internet.
+- O plugin grava arquivos só em `~/.claude`.
+- A exceção é quando você pede para criar ou mudar a equipe de um projeto (`/sala equipe`, `/sala mesa`): aí ele grava o `.claude/sala-agentes.json` desse projeto.
+- O painel web é um servidor local que você liga se quiser.
 
 ## 2. Requisitos
 
-- **Claude Code** com suporte a plugins de *function hooks*. Vale a versão de terminal (CLI) e o app desktop, no Windows, no macOS ou no Linux. Use uma versão recente.
+- **Claude Code** com suporte a plugins de *function hooks*. Vale a versão de terminal (CLI) e o app desktop, no Windows, no macOS ou no Linux.
+  - Testado com o Claude Code 2.1.293; confira a sua com `claude --version`.
+  - Versões antigas, sem esse tipo de plugin, não carregam a sala. Nelas, `claude plugin validate` não existe ou reclama dos hooks.
 - **Node.js 18 ou mais novo**, só para o instalador e o painel web. O plugin em si não precisa de Node. Baixe em [nodejs.org](https://nodejs.org) a versão LTS. Para conferir: `node --version`.
 - **Git**, opcional, para clonar o repositório.
 
@@ -81,10 +87,18 @@ Recomendada para quem não quer mexer em arquivos.
    node scripts/gerar-skill.mjs
    ```
    O pacote sai em `dist/sala-agentes.skill`, que é um zip.
-2. Instale a skill:
-   - **Claude Code:** descompacte o `.skill` dentro de `~/.claude/skills/`. Deve ficar `~/.claude/skills/sala-agentes/SKILL.md`.
-   - **claude.ai:** nas configurações, na área de Skills, envie o arquivo `.skill`.
-3. Num chat, peça: **"instala a sala dos agentes"**.
+2. Descompacte o `.skill` (é um zip) dentro de `~/.claude/skills/`. Deve ficar `~/.claude/skills/sala-agentes/SKILL.md`.
+   - macOS e Linux:
+     ```bash
+     mkdir -p ~/.claude/skills
+     tar -xf dist/sala-agentes.skill -C ~/.claude/skills
+     ```
+   - Windows (PowerShell; o `tar` já vem no Windows 10 e 11):
+     ```powershell
+     New-Item -ItemType Directory -Force "$HOME\.claude\skills" | Out-Null
+     tar -xf dist\sala-agentes.skill -C "$HOME\.claude\skills"
+     ```
+3. Num chat do Claude Code **no computador onde a sala vai ficar**, peça: **"instala a sala dos agentes"**. A skill roda o instalador (`node`) nessa máquina, por isso precisa ser o Claude Code dela, e não o claude.ai no navegador.
 4. A skill pergunta:
    - quantas mesas a equipe terá, de 1 a 11;
    - o tipo dos seus projetos;
@@ -117,6 +131,7 @@ node skill/sala-agentes/scripts/instalar.mjs --painel
 | `--iniciar-com-windows` | Com `--painel`, no Windows: o painel sobe sozinho ao entrar no Windows |
 | `--porta N` | Porta do painel na primeira configuração (padrão 8787) |
 | `--forcar` | Instala mesmo se a versão instalada for mais nova |
+| `--parar-painel` | Para o painel em execução. Não mexe no atalho nem no plugin |
 | `--desinstalar` | Remove o plugin, as variáveis, o atalho e o painel em execução. Equipes e configurações do painel ficam |
 | `--ajuda` | Lista as opções |
 
@@ -130,7 +145,9 @@ node skill/sala-agentes/scripts/instalar.mjs --painel
 2. No `~/.claude/settings.json`, acrescenta as duas variáveis da Opção C, com uma cópia de segurança `settings.json.bak-sala-*` antes. O resto do arquivo não é tocado.
 3. Se você passou `--equipe`, grava o arquivo da equipe.
 4. Se você passou `--painel`, liga o painel e, com `--iniciar-com-windows`, cria o atalho na pasta Inicializar do Windows.
-5. Valida o plugin com `claude plugin validate`, se o comando `claude` existir.
+5. Valida o plugin com `claude plugin validate`, se o comando `claude` existir. A validação roda numa pasta de configuração temporária, para não mexer no seu `settings.json`.
+
+Se você rodar o instalador de dentro de um clone do repositório, ele usa a pasta `plugin/` do clone. De dentro do pacote `.skill`, usa a cópia do pacote. A saída diz qual foi usada.
 
 Ele nunca mexe em firewall nem em outras configurações de segurança.
 
@@ -138,37 +155,41 @@ Ele nunca mexe em firewall nem em outras configurações de segurança.
 
 Instala só o plugin; o painel web precisa de Node.
 
-**1. Copie a pasta `plugin/` do repositório para `~/.claude/mods/sala-agentes/`.**
+Rode os comandos de dentro da pasta do repositório. Se você baixou o ZIP do GitHub em vez de clonar, a pasta se chama `squadesk-main`.
+
+**1. Copie o conteúdo da pasta `plugin/` para `~/.claude/mods/sala-agentes/`.** Os mesmos comandos servem para instalar e para atualizar.
 
 - macOS e Linux:
   ```bash
-  mkdir -p ~/.claude/mods
-  cp -R plugin ~/.claude/mods/sala-agentes
+  mkdir -p ~/.claude/mods/sala-agentes
+  cp -R plugin/. ~/.claude/mods/sala-agentes/
   ```
 - Windows (PowerShell):
   ```powershell
-  New-Item -ItemType Directory -Force "$HOME\.claude\mods" | Out-Null
-  Copy-Item -Recurse plugin "$HOME\.claude\mods\sala-agentes"
+  New-Item -ItemType Directory -Force "$HOME\.claude\mods\sala-agentes" | Out-Null
+  Copy-Item -Recurse -Force plugin\* "$HOME\.claude\mods\sala-agentes"
   ```
 
-**2. Diga ao Claude Code para carregar essa pasta.** Abra `~/.claude/settings.json` (crie o arquivo se não existir). Dentro de `"env"`, acrescente as duas linhas abaixo, sem apagar o que já estiver lá. Use o caminho completo da sua pasta pessoal.
+As pastas `tests/` e `web/sample/` vão junto. Elas não atrapalham, e você pode apagá-las.
+
+**2. Diga ao Claude Code para carregar essa pasta.** Abra `~/.claude/settings.json` (crie o arquivo se não existir). Dentro de `"env"`, acrescente as duas linhas abaixo, sem apagar o que já estiver lá. Troque `SEU_USUARIO` pelo nome da sua pasta pessoal.
 
 - Windows (barras invertidas dobradas no JSON):
   ```json
   {
     "env": {
-      "CLAUDE_CODE_PLUGIN_DIRS": "C:\\Users\\<você>\\.claude\\mods\\sala-agentes",
+      "CLAUDE_CODE_PLUGIN_DIRS": "C:\\Users\\SEU_USUARIO\\.claude\\mods\\sala-agentes",
       "CLAUDE_CODE_PLUGIN_DIR_WATCH": "1"
     }
   }
   ```
 - macOS:
   ```json
-  { "env": { "CLAUDE_CODE_PLUGIN_DIRS": "/Users/<você>/.claude/mods/sala-agentes", "CLAUDE_CODE_PLUGIN_DIR_WATCH": "1" } }
+  { "env": { "CLAUDE_CODE_PLUGIN_DIRS": "/Users/SEU_USUARIO/.claude/mods/sala-agentes", "CLAUDE_CODE_PLUGIN_DIR_WATCH": "1" } }
   ```
 - Linux:
   ```json
-  { "env": { "CLAUDE_CODE_PLUGIN_DIRS": "/home/<você>/.claude/mods/sala-agentes", "CLAUDE_CODE_PLUGIN_DIR_WATCH": "1" } }
+  { "env": { "CLAUDE_CODE_PLUGIN_DIRS": "/home/SEU_USUARIO/.claude/mods/sala-agentes", "CLAUDE_CODE_PLUGIN_DIR_WATCH": "1" } }
   ```
 
 O que cada variável faz:
@@ -181,7 +202,7 @@ O que cada variável faz:
 
 1. Abra um **chat novo** no Claude Code.
 2. A sala abre sozinha. Se não abrir, digite `/sala`.
-3. O rodapé da sala mostra a versão do plugin e de onde veio a equipe.
+3. No app desktop, o rodapé da sala mostra a versão do plugin e de onde veio a equipe.
 4. Pelo terminal, `node skill/sala-agentes/scripts/instalar.mjs --verificar` mostra o estado completo.
 
 ## 4. Primeiros passos
@@ -222,16 +243,37 @@ Resumo:
 - Abre sozinha quando o chat começa; se você fechar, `/sala` reabre.
 - No app desktop ela fica num painel ao lado da conversa. Se não couber, alargue a janela.
 
-**O que mostra, de cima para baixo:**
-- **Desenho:** o Tech Lead e as mesas. A cor do personagem segue o modelo: dourado para Opus, laranja para Sonnet, verde-água para Haiku. O balão mostra a atividade. A linha tracejada liga quem delegou a quem recebeu.
-- **Lista:** papel, modelo, atividade (pensando, lendo, editando, rodando comando, delegando, aguardando você, concluído), o arquivo ou comando atual, a tarefa, o cronômetro e os tokens. "Histórico" abre os últimos passos daquele agente.
+**No app desktop, de cima para baixo:**
+- **Aviso:** se o arquivo da equipe tiver erro, ele aparece no topo, com o motivo.
+- **Desenho:** o Tech Lead e as mesas.
+  - A cor do personagem segue o modelo: dourado para Opus, laranja para Sonnet, verde-água para Haiku.
+  - O balão mostra a atividade.
+  - A linha tracejada liga quem delegou a quem recebeu.
+- **Lista:** papel, modelo, atividade, o arquivo ou comando atual, a tarefa, o cronômetro, os tokens e um resumo do que o agente já fez ("editou: a.ts, b.ts · leu: c.md").
 - **Outros chats:** veja 5.11.
 - **Hoje neste chat:** veja 5.10.
 - **Eventos:** quem delegou o quê, quem concluiu, quem pediu aprovação.
-- **Rodapé:** a versão do plugin e de onde veio a equipe. Se o arquivo da equipe tiver erro, o aviso aparece aqui.
-- **Botões:** "Copiar resumo do dia", "Copiar link do painel" (com o painel ligado) e "Zerar sala", que limpa o desenho e os eventos deste chat.
+- **Rodapé:** a versão do plugin e de onde veio a equipe.
+- **Botões:**
+  - "Copiar resumo do dia", que aparece depois da primeira tarefa concluída no dia;
+  - "Copiar link do painel", com o painel ligado;
+  - "Zerar sala", que limpa o desenho e os eventos deste chat.
 
-Agentes concluídos saem da sala 15 s depois de terminar.
+**No terminal (CLI):** a sala é em texto, sem desenho nem botões. Mostra o aviso de erro da equipe, uma linha por agente (papel, modelo, atividade, detalhe, cronômetro e tokens), os outros chats e os últimos eventos.
+
+**Atividades:**
+
+| Atividade | Quer dizer |
+|---|---|
+| pensando | O modelo está raciocinando ou escrevendo |
+| lendo | Lendo arquivos ou buscando no código ou na web |
+| editando | Escrevendo ou alterando arquivos |
+| executando | Rodando um comando no terminal |
+| delegando | Criou um subagente ou mandou mensagem a outro agente |
+| aguardando você | Espera a sua aprovação ou a resposta a uma pergunta |
+| concluído | Terminou; sai da sala 15 s depois |
+| ocioso | O Tech Lead espera o seu próximo pedido |
+| livre | Mesa sem ninguém trabalhando |
 
 ### 5.2 Equipe e mesas
 
@@ -257,7 +299,7 @@ O formato completo está na [seção 7](#7-o-arquivo-da-equipe).
 
 **Ligado por padrão:** sim. A ordem da escolha:
 1. A descrição da tarefa começa com **"Papel: …"** (ex.: "Dev Backend: criar o login"): vai para essa mesa.
-2. O nome ou um apelido da mesa aparece na descrição ou no começo do prompt (ex.: "Você é o QA…").
+2. O nome ou um apelido da mesa aparece na descrição ou no prompt (ex.: "Você é o QA…"). Se aparecerem vários, vale o que vem primeiro.
 3. As palavras-chave da descrição, entre as mesas do mesmo modelo do agente.
 4. A mesa menos ocupada desse modelo.
 
@@ -274,6 +316,13 @@ O guia automático (5.7) já ensina o modelo a escrever "Papel: tarefa", então 
 **O que é:** uma mesa criada na hora para uma especialidade que a equipe não tem. Ela some quando o agente termina.
 
 **Como usar:** a descrição da tarefa começa com o novo papel, por exemplo "QA Android: testar o login no app". O guia automático faz o modelo usar isso sozinho quando falta uma especialidade.
+
+O texto antes dos dois-pontos só vira mesa se parecer nome de papel:
+- até 3 palavras, com a primeira letra maiúscula (conectivos como "de" e "e" à parte);
+- até 24 caracteres;
+- sem ser um verbo ou uma etapa, como "Corrigir:", "Fase 2:" ou "Bug 12:".
+
+Fora disso, a tarefa segue a escolha normal da seção 5.3.
 
 ### 5.6 Mesas fixas: adicionar e tirar
 
@@ -307,7 +356,7 @@ O limite é de 11 mesas fixas.
 - **Formato:** cada tarefa vai como "Papel: tarefa", com o prompt "Você é o <Papel>…" e o modelo da mesa. Haiku cuida de documentação e conferência, Sonnet de código e QA ponta a ponta; o Opus fica com o Tech Lead.
 - **Falta de especialidade:** ele cria um papel temporário ou, em projeto grande, uma mesa fixa.
 
-**Ligado por padrão:** sim. Os subagentes não recebem o guia.
+**Ligado por padrão:** sim. O guia vai para o modelo principal. Se um subagente o receber, o próprio texto manda ignorá-lo e fazer só a tarefa dele.
 
 **Como ver:** `/sala guia` mostra o texto exato que o modelo recebe naquele projeto.
 
@@ -320,7 +369,9 @@ O limite é de 11 mesas fixas.
 **Ligado por padrão:** sim, é automático.
 - **Tokens:** gasto de cada agente (entrada nova, gravação de cache e saída), somado ao fim de cada turno. Aparece na mesa, na lista e no total do cabeçalho.
 - **Cronômetro:** há quanto tempo o agente está na tarefa atual.
-- **Histórico:** os últimos 30 passos de cada agente (operação e alvo). Fica em "histórico" na lista.
+- **Histórico:** os últimos 30 passos de cada agente (operação e alvo).
+  - Na sala do chat aparece resumido numa linha, como "editou: a.ts, b.ts · leu: c.md (+2)".
+  - No painel web, "histórico" abre a lista completa.
 
 ### 5.9 Aviso de aprovação
 
@@ -334,9 +385,14 @@ O limite é de 11 mesas fixas.
 
 **Como usar:** `/sala resumo` ou o botão "Copiar resumo do dia". A seção "Hoje neste chat" da sala mostra o mesmo.
 
+**Quando o dia vira:**
+- Na sala, "hoje" e os horários seguem o fuso do computador.
+- No painel web, seguem o fuso do aparelho que está vendo.
+- Um celular em outro fuso pode ver o resumo do dia vazio perto da meia-noite.
+
 ### 5.11 Outros chats
 
-**O que é:** uma seção da sala com os outros chats abertos na mesma máquina: título, projeto, se estão trabalhando ou esperando você, e os tokens. Chats sem sinal há mais de 6 horas saem da lista.
+**O que é:** uma seção da sala com até 6 outros chats abertos na mesma máquina: título, projeto, se estão trabalhando ou esperando você, e os tokens. Chats sem sinal há mais de 6 horas saem da lista. Para ver todos, use o painel web.
 
 **Ligado por padrão:** sim, é automático. Não precisa do painel web.
 
@@ -353,9 +409,9 @@ node ~/.claude/mods/sala-agentes/web/server.mjs
 No Windows (PowerShell), `node "$HOME\.claude\mods\sala-agentes\web\server.mjs"`. Pelo instalador, é a opção `--painel`. Se o painel já estiver no ar, a segunda cópia sai sozinha.
 
 **O link de acesso:**
-- Na primeira vez, o painel cria `~/.claude/sala-agentes/web.json` com a porta, uma **chave** aleatória e os links prontos (campo `urls`), um por endereço de rede da máquina.
+- Na primeira vez, o painel cria `~/.claude/sala-agentes/web.json` com a porta, uma **chave** aleatória e os links prontos (campo `urls`): um para cada endereço de rede da máquina (só o `localhost` quando `host` é `127.0.0.1`; só aquele IP quando `host` é um IP específico).
 - Os links também aparecem em `/sala painel` e no botão "Copiar link do painel".
-- Abra o link completo, com `?t=<chave>`, uma vez em cada aparelho. O navegador guarda um cookie por 30 dias e a chave sai da barra de endereço.
+- Abra o link completo, com `?t=<chave>`, uma vez em cada aparelho. O navegador guarda um cookie por 30 dias, um por porta, e a chave sai da barra de endereço.
 - Sem a chave, o acesso é negado.
 
 **Acessar de outro aparelho:**
@@ -376,7 +432,7 @@ Para deixar um favorito pronto, use os parâmetros na URL: `?modo=lista|mosaico|
 
 **Editor de mesas:**
 - O botão **Mesas** na sala escolhida adiciona ou tira mesas fixas do projeto daquele chat.
-- Só aparece abrindo o painel **no próprio computador**.
+- Só aparece quando você abre o painel no próprio computador pelo link **`localhost`** (`http://localhost:8787/?t=…`). Pelo link com o IP da rede, mesmo no próprio PC, o botão não aparece.
 - Para liberar pela rede, ponha `"allowRemoteEdit": true` no `web.json`. Vale em até 5 s, sem reiniciar.
 
 **Configurações no `~/.claude/sala-agentes/web.json`:**
@@ -391,7 +447,7 @@ Para deixar um favorito pronto, use os parâmetros na URL: `?modo=lista|mosaico|
 
 **Subir junto com o sistema:**
 - **Windows:** rode o instalador com `--painel --iniciar-com-windows`. Ele cria um atalho oculto na pasta Inicializar (`shell:startup`).
-- **macOS (launchd):** crie `~/Library/LaunchAgents/com.squadesk.painel.plist`. Troque o caminho do node pelo resultado de `which node` e `<você>` pelo seu usuário:
+- **macOS (launchd):** crie `~/Library/LaunchAgents/com.squadesk.painel.plist`. Troque `/usr/local/bin/node` pelo resultado de `which node` e `SEU_USUARIO` pelo nome da sua pasta pessoal:
   ```xml
   <?xml version="1.0" encoding="UTF-8"?>
   <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -401,7 +457,7 @@ Para deixar um favorito pronto, use os parâmetros na URL: `?modo=lista|mosaico|
     <key>ProgramArguments</key>
     <array>
       <string>/usr/local/bin/node</string>
-      <string>/Users/<você>/.claude/mods/sala-agentes/web/server.mjs</string>
+      <string>/Users/SEU_USUARIO/.claude/mods/sala-agentes/web/server.mjs</string>
     </array>
     <key>RunAtLoad</key><true/>
   </dict>
@@ -424,7 +480,8 @@ Para deixar um favorito pronto, use os parâmetros na URL: `?modo=lista|mosaico|
 
 **Desligar:**
 - Encerre o processo `node` do `server.mjs`:
-  - no Windows, pelo Gerenciador de Tarefas;
+  - em qualquer sistema, com o instalador: `node skill/sala-agentes/scripts/instalar.mjs --parar-painel`;
+  - no Windows, também pelo Gerenciador de Tarefas: é o processo `node.exe` cuja linha de comando termina em `sala-agentes\web\server.mjs`;
   - no macOS/Linux, `pkill -f sala-agentes/web/server.mjs`.
 - Para não subir mais com o sistema:
   - no Windows, apague `sala-agentes-painel.vbs` de `shell:startup`;
@@ -466,14 +523,14 @@ Nome: `sala-agentes.json`. Fica em `.claude/` do projeto (vale só nele) ou em `
 | Campo | Obrigatório | Regra |
 |---|---|---|
 | `papeis` | sim | De 1 a 11 mesas, na ordem do desenho. As 2 primeiras ficam ao lado do líder |
-| `papeis[].nome` | sim | Até 22 caracteres, único |
+| `papeis[].nome` | sim | Até 22 caracteres (a sala corta o que passar) e diferente dos outros. O instalador e o editor do painel recusam nome longo ou repetido |
 | `papeis[].modelo` | recomendado | `Opus`, `Sonnet`, `Haiku` ou `Fable`. Agentes desse modelo preferem esta mesa |
 | `papeis[].palavras` | recomendado | Começos de palavra, em minúsculas e sem acento: `test` pega "testes" e "testar" |
 | `papeis[].apelidos` | não | Outros nomes da mesa. Citar o nome ou um apelido manda o agente direto para ela |
 | `lider` | não | Nome e modelo do líder (padrão: Tech Lead, Opus) |
 | `orientar` | não | `false` desliga o guia automático |
 
-Se o arquivo tiver erro, a sala usa a equipe padrão e mostra o motivo no rodapé.
+Se o arquivo tiver erro, a sala usa a equipe padrão e mostra o motivo no topo da sala.
 
 O catálogo com 20 segmentos prontos (Dev Mobile, Segurança, Dados/BI, Redes, UX…) e equipes sugeridas por tipo de projeto está em [`skill/sala-agentes/references/mesas.md`](../skill/sala-agentes/references/mesas.md).
 
@@ -488,6 +545,7 @@ O catálogo com 20 segmentos prontos (Dev Mobile, Segurança, Dados/BI, Redes, U
 | `~/.claude/sala-agentes/live/` | Retratos dos chats, lidos pelo painel e pela seção "Outros chats" |
 | `~/.claude/sala-agentes/web.json` | Configuração e chave do painel web |
 | `~/.claude/sala-agentes/instalacao.json` | Registro do instalador, usado para desinstalar |
+| `~/.claude/sala-agentes/painel.pid` | Número do processo do painel, usado para pará-lo com segurança |
 | `~/.claude/sala-agentes/start-painel.vbs` | (Windows) Script que liga o painel oculto |
 
 ## 9. Atualizar e desinstalar
@@ -512,8 +570,8 @@ node skill/sala-agentes/scripts/instalar.mjs --desinstalar
 | A sala não aparece | Abra um **chat novo**: chats abertos antes da instalação não leem a variável. Se persistir, reinicie o app. Confira o `settings.json` com `instalar.mjs --verificar` e rode `claude plugin validate ~/.claude/mods/sala-agentes` |
 | "A sala não coube" | Alargue a janela do Claude Code |
 | Todos os agentes caem na mesma mesa | Dê palavras-chave às mesas, ou peça tarefas no formato "Papel: tarefa". Confira com `/sala guia` se o guia está ligado |
-| A equipe não mudou | Confira se o projeto tem um `.claude/sala-agentes.json` próprio: ele vale no lugar do da conta. O rodapé da sala diz de onde veio a equipe |
-| Rodapé com aviso de erro na equipe | O JSON está inválido ou uma regra foi quebrada; a mensagem diz qual. Corrija o arquivo: a sala relê em 10 s |
+| A equipe não mudou | Confira se o projeto tem um `.claude/sala-agentes.json` próprio: ele vale no lugar do da conta. O rodapé da sala (app desktop) e o `/sala mesas` dizem de onde veio a equipe |
+| Aviso de erro na equipe, no topo da sala | O JSON está inválido ou uma regra foi quebrada; a mensagem diz qual. Corrija o arquivo: a sala relê em 10 s |
 | `/sala painel` diz que o painel não está ligado | Ligue o servidor (5.12). O `web.json` só aparece depois da primeira execução |
 | O painel não abre em outro aparelho | Use o IP da rede local, e não o `localhost`. Libere o Node no firewall. Confira se `host` não está `127.0.0.1` |
 | "Acesso negado" no painel | Abra o link completo, com `?t=<chave>` |
@@ -523,7 +581,13 @@ node skill/sala-agentes/scripts/instalar.mjs --desinstalar
 ## 11. Privacidade e segurança
 
 - **O que fica local:** tudo. Não há servidor externo, conta nem telemetria.
-- **O que aparece no painel:** os papéis, as atividades, os nomes de arquivos, os comandos e o andamento dos chats. O **texto dos seus pedidos não aparece**: nem no retrato, nem no painel.
+- **O que vai para o retrato e para o painel:**
+  - o título de cada chat e o caminho completo da pasta do projeto;
+  - os papéis e as descrições das tarefas que o Tech Lead deu aos subagentes;
+  - as atividades, os nomes de arquivos e a primeira linha dos comandos executados;
+  - os tokens e os eventos.
+- **O que não vai:** o **texto dos seus pedidos** não aparece, nem no retrato, nem no painel.
+- **Cuidado com segredos:** a primeira linha de um comando aparece inteira. Se você costuma passar senha ou chave direto na linha de comando, ela fica visível para quem abre o painel. Prefira variáveis de ambiente ou arquivos.
 - **A chave do painel:** o link carrega a chave. Compartilhe só com quem pode ver essas informações, e troque a chave quando quiser (5.12).
 - **O editor de mesas:** só funciona no próprio PC, salvo `allowRemoteEdit`. Ele só grava `<projeto>/.claude/sala-agentes.json`.
 - **Rede e firewall:** o instalador e o painel nunca mudam firewall ou outras configurações de segurança.

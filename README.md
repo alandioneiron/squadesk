@@ -66,7 +66,7 @@ Como ligar, usar e desligar cada recurso (sala, mesas, guia automático, avisos,
 - como delegar às mesas está em [`skill/sala-agentes/references/uso-da-sala.md`](skill/sala-agentes/references/uso-da-sala.md).
 
 **Privacidade:**
-- O texto dos seus pedidos não sai no painel: ele mostra papéis, atividades, arquivos e comandos.
+- O texto dos seus pedidos não sai no painel. Ele mostra o título dos chats, a pasta do projeto, as tarefas dadas aos subagentes, os arquivos e a primeira linha dos comandos ([detalhes](docs/MANUAL.md#11-privacidade-e-segurança)).
 - O link do painel tem uma chave. Compartilhe só com quem pode ver isso.
 
 ## Estrutura
@@ -89,6 +89,8 @@ node scripts/publicar.mjs
 ```
 
 O `publicar.mjs` valida, testa e só então copia o plugin para `~/.claude/mods/sala-agentes`. Ele recusa a cópia se a pasta instalada foi editada por fora.
+- **Opções:** `--force` publica mesmo assim, `--sem-teste` pula os testes e a variável `SALA_DEST` troca a pasta de destino.
+- **Para quem desenvolve:** ao contrário do instalador, ele também leva `tests/` e `web/sample/`.
 - **Onde editar:** só em `plugin/`. Todos os chats recarregam da pasta instalada, e um arquivo salvo pela metade quebraria a sala em todos eles.
 - **Versão:** suba `version` em `plugin/.claude-plugin/plugin.json` a cada entrega; o rodapé da sala mostra a versão de cada chat.
 - **Painel:** se `web/server.mjs` mudar, reinicie o painel.

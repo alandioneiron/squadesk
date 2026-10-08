@@ -107,7 +107,7 @@ Limites: de 1 a 11 mesas, nome de até 22 caracteres e único. A última mesa n�
 
 ## 7. Privacidade
 
-- O texto dos pedidos do usuário não entra no retrato da sala nem no painel. Aparecem papéis, atividades, arquivos e comandos.
+- O texto dos pedidos do usuário não entra no retrato da sala nem no painel. Aparecem o título do chat, a pasta do projeto, as tarefas dadas aos subagentes, as atividades, os arquivos e a primeira linha dos comandos (evite senha na linha de comando).
 - O link do painel tem a chave (token). Compartilhe só com quem pode ver nomes de arquivos, comandos e andamento dos chats.
 - Para trocar a chave e invalidar os links antigos, apague a linha `token` do `web.json` e reinicie o painel.
 - O painel não mexe no firewall. Na primeira vez, o Windows pode perguntar se o Node pode acessar a rede, e quem decide é o usuário.

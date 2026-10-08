@@ -48,7 +48,16 @@ function loadConfig() {
   return { port, host, token, allowRemoteEdit: c.allowRemoteEdit === true }
 }
 
-function lanUrls(port, token) {
+// Links de acesso coerentes com o `host` em que o servidor escuta:
+// loopback -> só localhost; IP/nome específico -> esse endereço + localhost; 0.0.0.0 ou :: -> todos os IPs da LAN + localhost.
+function lanUrls(port, token, host) {
+  const local = `http://localhost:${port}/?t=${token}`
+  const h = String(host || '0.0.0.0').trim().toLowerCase().replace(/^\[|\]$/g, '')
+  if (h === '127.0.0.1' || h === '::1' || h === 'localhost') return [local]
+  // Um endereço específico: o servidor só escuta nele, então o localhost não serviria.
+  if (h && h !== '0.0.0.0' && h !== '::') {
+    return [`http://${h.includes(':') ? '[' + h + ']' : h}:${port}/?t=${token}`]
+  }
   const urls = []
   for (const list of Object.values(os.networkInterfaces())) {
     for (const i of list || []) {
@@ -58,7 +67,7 @@ function lanUrls(port, token) {
       urls.push(`http://${i.address}:${port}/?t=${token}`)
     }
   }
-  urls.push(`http://localhost:${port}/?t=${token}`)
+  urls.push(local)
   return urls
 }
 
@@ -469,14 +478,26 @@ function tokenOk(v) {
   return crypto.timingSafeEqual(h, TOKEN_HASH)
 }
 
-function cookieToken(req) {
+// O cookie não distingue porta (só o host): dois painéis em localhost com portas diferentes
+// sobrescreveriam a chave um do outro. Por isso cada porta grava o seu: sala_t_<porta>.
+// O nome antigo (sala_t) ainda é aceito para quem já tem o cookie e é regravado no nome novo.
+const COOKIE_NAME = `sala_t_${PORT}`
+const LEGACY_COOKIE_NAME = 'sala_t'
+const COOKIE_SET = `${COOKIE_NAME}=${TOKEN}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${30 * 24 * 3600}`
+
+// Devolve o valor do cookie atual (cur) e do antigo (legacy); '' quando ausente.
+function cookieTokens(req) {
   const raw = String(req.headers.cookie || '')
+  let cur = ''
+  let legacy = ''
   for (const part of raw.split(';')) {
     const i = part.indexOf('=')
     if (i < 0) continue
-    if (part.slice(0, i).trim() === 'sala_t') return part.slice(i + 1).trim()
+    const name = part.slice(0, i).trim()
+    if (name === COOKIE_NAME && !cur) cur = part.slice(i + 1).trim()
+    else if (name === LEGACY_COOKIE_NAME && !legacy) legacy = part.slice(i + 1).trim()
   }
-  return ''
+  return { cur, legacy }
 }
 
 const SIMPLE_STYLE = `<style>html,body{margin:0;height:100%;background:#131311;color:#EFEBE2;font:16px "Segoe UI",system-ui,sans-serif}
@@ -512,7 +533,7 @@ function handle(req, res) {
     return
   }
 
-  // Autenticação: ?t= (grava cookie e redireciona) ou cookie sala_t
+  // Autenticação: ?t= (grava cookie e redireciona) ou cookie sala_t_<porta> (ou o antigo sala_t)
   let qs
   try { qs = new URLSearchParams(search) } catch { qs = new URLSearchParams() }
   const qt = qs.get('t')
@@ -522,13 +543,18 @@ function handle(req, res) {
     res.writeHead(302, {
       ...SEC_HEADERS,
       Location: pathname + (rest ? '?' + rest : ''),
-      'Set-Cookie': `sala_t=${TOKEN}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${30 * 24 * 3600}`,
+      'Set-Cookie': COOKIE_SET,
       'Content-Length': 0,
     })
     res.end()
     return
   }
-  const authed = tokenOk(cookieToken(req)) || (isPost && qt !== null && tokenOk(qt))
+  const ck = cookieTokens(req)
+  const curOk = tokenOk(ck.cur)
+  // Cookie antigo válido (sem o novo): aceita e regrava no nome por porta na própria resposta.
+  const migrate = !curOk && tokenOk(ck.legacy)
+  const authed = curOk || migrate || (isPost && qt !== null && tokenOk(qt))
+  const cookieHdr = migrate ? { 'Set-Cookie': COOKIE_SET } : {}
   if (!authed) {
     if (isPost) req.resume()
     send(req, res, 401, 'text/html; charset=utf-8', DENIED_HTML, isPost ? { Connection: 'close' } : {})
@@ -546,21 +572,22 @@ function handle(req, res) {
   }
 
   if (pathname === '/') {
-    send(req, res, 200, 'text/html; charset=utf-8', PAGE)
+    send(req, res, 200, 'text/html; charset=utf-8', PAGE, cookieHdr)
     return
   }
   const sm = pathname.match(/^\/sala\/([^/]+)\/?$/)
   if (sm) {
     let id = ''
     try { id = decodeURIComponent(sm[1]) } catch {}
-    if (id && readSalas().some((s) => s.id === id)) send(req, res, 200, 'text/html; charset=utf-8', PAGE)
-    else send(req, res, 404, 'text/html; charset=utf-8', NOTFOUND_HTML)
+    if (id && readSalas().some((s) => s.id === id)) send(req, res, 200, 'text/html; charset=utf-8', PAGE, cookieHdr)
+    else send(req, res, 404, 'text/html; charset=utf-8', NOTFOUND_HTML, cookieHdr)
     return
   }
   if (pathname === '/api/salas') {
     send(
       req, res, 200, 'application/json; charset=utf-8',
       JSON.stringify({ serverNow: Date.now(), canEdit: canEditReq(req), salas: readSalas() }),
+      cookieHdr,
     )
     return
   }
@@ -592,14 +619,14 @@ server.on('error', (e) => {
 })
 
 server.listen(PORT, HOST, () => {
-  const urls = lanUrls(PORT, TOKEN)
+  const urls = lanUrls(PORT, TOKEN, HOST)
   console.log(`Sala dos Agentes · painel em http://localhost:${PORT}/  (pasta: ${LIVE_DIR})`)
   if (TEST_MODE) return
   writeConfig(cfg, urls)
   // A rede às vezes sobe depois do login: reavalia os IPs de tempos em tempos e regrava só se mudar.
   let last = JSON.stringify(urls)
   setInterval(() => {
-    const now = lanUrls(PORT, TOKEN)
+    const now = lanUrls(PORT, TOKEN, HOST)
     const s = JSON.stringify(now)
     if (s !== last) {
       last = s
@@ -1011,7 +1038,8 @@ body.fit .note{display:none}
   var nf1 = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 });
   var nf0 = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 });
   var nf2 = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 2 });
-  var TZ = 'America/Sao_Paulo';
+  var TZ = 'UTC'; // fuso do navegador (o do aparelho que está olhando o painel)
+  try { TZ = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; } catch (e) {}
   var dfParts = new Intl.DateTimeFormat('en-US', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' });
   var dfHour = new Intl.DateTimeFormat('pt-BR', { timeZone: TZ, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
 

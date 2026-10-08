@@ -1,5 +1,5 @@
 import type { AgentRow, Daily, LogLine, OtherChat, Team, TrailItem } from '../types'
-import { fmtDuration, fmtTokens, renderSvg, roster, STATUS } from './room'
+import { fmtDuration, fmtTokens, localZone, renderSvg, roster, STATUS } from './room'
 import { LEAD } from './team'
 
 // O retrato de um chat que o painel web e os outros chats leem (contrato em web/SNAPSHOT.md).
@@ -42,10 +42,10 @@ export type Snapshot = {
   daily: Daily
 }
 
-/** Data local (Brasília) no formato YYYY-MM-DD. */
-export function today(ms: number): string {
+/** Data local (no fuso do sistema, ou no `zone` dado) no formato YYYY-MM-DD. */
+export function today(ms: number, zone: string = localZone()): string {
   try {
-    return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date(ms))
+    return new Intl.DateTimeFormat('en-CA', { timeZone: zone }).format(new Date(ms))
   } catch {
     return new Date(ms).toISOString().slice(0, 10)
   }

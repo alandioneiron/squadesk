@@ -45,13 +45,17 @@ type Snapshot = {
     trail: { op: string; what: string }[]  // histórico: op = leu|editou|rodou|buscou|abriu; mais recente por último
   }[]
   log: { at: number; text: string }[]   // últimos eventos, mais recente por último (sem o texto dos pedidos)
-  daily: { date: string; roles: { role: string; tasks: number; ms: number; tokens: number }[] }  // resumo do dia deste chat; date = YYYY-MM-DD
+  daily: { date: string; roles: { role: string; tasks: number; ms: number; tokens: number }[] }  // resumo do dia deste chat; date = YYYY-MM-DD (dia gravado pelo plugin); a página compara com o "hoje" no fuso do navegador
 }
 ```
 
 Configuração do painel (gravada pelo servidor, lida pelo plugin para mostrar o link):
 
 `~/.claude/sala-agentes/web.json` → `{ "port": 8787, "host": "0.0.0.0", "token": "<aleatório>", "urls": ["http://192.168.x.y:8787/?t=<token>", ...] }`
+
+`urls` acompanha o `host`: `127.0.0.1`, `::1` ou `localhost` → só `http://localhost:<porta>/?t=<token>`; IP específico → só esse IP; `0.0.0.0` ou `::` → todos os IPs IPv4 da máquina (sem loopback nem `169.254.*`) + `localhost`.
+
+Autenticação do navegador: `?t=<token>` grava o cookie `sala_t_<porta>` (HttpOnly, SameSite=Lax, 30 dias) e redireciona sem a chave. Cada porta tem o seu cookie, para painéis em portas diferentes do mesmo host não se sobrescreverem. O nome antigo `sala_t` continua aceito e, ao ser usado, o servidor regrava o cookie no nome novo (`Set-Cookie` na resposta de `/`, `/sala/<id>` e `/api/salas`).
 
 ## API do painel
 

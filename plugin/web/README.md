@@ -1,6 +1,6 @@
 # Painel web do Squadesk
 
-> O guia completo para usuários está em [`docs/MANUAL.md`](../../docs/MANUAL.md). Este arquivo é a referência técnica.
+> O guia completo para usuários está em [`docs/MANUAL.md`](https://github.com/alandioneiron/squadesk/blob/main/docs/MANUAL.md). Este arquivo é a referência técnica.
 
 Servidor Node leve (sem dependências) que mostra, ao vivo e numa página, as salas de todos os chats do Claude Code desta máquina. Abre no PC, no celular ou em qualquer aparelho da LAN/VPN. É de leitura, com uma única exceção: o editor de mesas (`POST /api/equipe`), que só mexe em `<pasta do projeto>/.claude/sala-agentes.json` e por padrão só aceita pedidos feitos no próprio computador (`"allowRemoteEdit": true` no `web.json` libera a rede).
 
@@ -34,7 +34,10 @@ Botão **Mesas** (na sala escolhida) abre um painel para adicionar ou tirar pap�
 
 ## Link de acesso e chave
 - A chave (token) e os links prontos ficam em `~/.claude/sala-agentes/web.json` (campo `urls`; também aparecem na seção do plugin). Abra o link completo uma vez em cada aparelho: o navegador guarda um cookie por 30 dias.
+  - O cookie se chama `sala_t_<porta>` (ex.: `sala_t_8787`): cada porta tem o seu, então dois painéis no mesmo host com portas diferentes não derrubam a chave um do outro. O nome antigo `sala_t` ainda é aceito e, ao usá-lo, o painel regrava o cookie no nome novo (ninguém precisa abrir o link de novo).
 - Porta e interface: campos `port` e `host` do mesmo arquivo (padrão `8787` e `0.0.0.0`). Campo opcional `allowRemoteEdit` (veja Editor de mesas).
+  - Os links do campo `urls` seguem o `host`: `127.0.0.1`, `::1` ou `localhost` geram só o link `localhost`; um IP específico gera só esse IP (o servidor só escuta nele); `0.0.0.0` ou `::` geram os IPs da máquina na rede mais o `localhost`. Mudou o `host`? Reinicie o painel para os links serem regravados.
+- Fuso horário: horas e o "hoje" do Resumo do dia usam o fuso do navegador que abriu o painel (`UTC` se ele não informar).
 - Trocar a chave: apague a linha `"token"` do `web.json` e reinicie o painel; uma nova chave é gerada e os links antigos deixam de valer.
 - Na primeira vez, o sistema pode perguntar se o Node pode acessar a rede (no Windows, é o aviso do Firewall; no macOS e no Linux, o firewall do sistema, se estiver ativo). Quem decide é você: o painel não mexe no firewall. Sem liberar, só o `localhost` funciona.
 

@@ -148,6 +148,7 @@ Exemplos de chamadas, como a sala escolhe a mesa e todos os comandos estão em `
 ## Atualizar e remover
 
 - **Atualizar:** com a skill nova, rode `instalar.mjs` sem `--equipe`. A equipe atual fica, e o painel reinicia sozinho se mudou.
+- **Parar só o painel:** `instalar.mjs --parar-painel`. O atalho e o plugin ficam.
 - **Remover:** `instalar.mjs --desinstalar`. Saem a pasta do plugin, a variável, o atalho e o painel em execução; as equipes e o `web.json` ficam. Confirme com o usuário antes.
 
 ## Sem Node

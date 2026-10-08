@@ -2,11 +2,12 @@
 // Instalador da skill portátil "sala-agentes" (Sala dos Agentes, plugin do Claude Code).
 //
 // O que faz (resumo; detalhes em --ajuda):
-//   1. copia o plugin para ~/.claude/mods/sala-agentes. A origem é a pasta ../assets/plugin (pacote .skill) ou,
-//      num clone do repositório, a pasta plugin/ da raiz (só os arquivos que o pacote levaria)
+//   1. copia o plugin para ~/.claude/mods/sala-agentes. Num clone do repositório a origem é a pasta plugin/ da raiz
+//      (só os arquivos que o pacote levaria); fora de um clone, a pasta ../assets/plugin do pacote .skill
 //   2. põe essa pasta no CLAUDE_CODE_PLUGIN_DIRS do ~/.claude/settings.json (e liga o recarregamento automático)
 //   3. grava a equipe (opcional), na conta ou num projeto
 //   4. liga o painel web (opcional) e, no Windows, o atalho de inicialização
+//   5. --parar-painel: só encerra o painel desta conta (não tira o atalho nem o plugin)
 //
 // Node 18+, sem dependências. Para testar sem tocar na conta real:
 //   SALA_HOME=<pasta de teste>           substitui a pasta pessoal
@@ -38,11 +39,12 @@ const PID_FILE = path.join(SALA_DIR, 'painel.pid') // PID do painel que o instal
 const SERVER_DEST = path.join(PLUGIN_DEST, 'web', 'server.mjs')
 const MANIFESTO = '.claude-plugin/plugin.json'
 
-// De onde vem o plugin: do pacote .skill (assets/plugin, gerado por scripts/gerar-skill.mjs) ou, quando essa pasta
-// não existe (clone do repositório, onde ela fica fora do git), da pasta plugin/ na raiz do clone.
+// De onde vem o plugin. Num clone do repositório (existe ../../../plugin/hooks/register.tsx) vale sempre a pasta plugin/
+// da raiz do clone: a assets/plugin que o scripts/gerar-skill.mjs deixa ao lado pode estar velha, então nunca é a
+// preferida ali. Fora de um clone (pacote .skill extraído) vale a assets/plugin do pacote.
 const PKG_EMBUTIDO = path.resolve(fileURLToPath(new URL('../assets/plugin/', import.meta.url)))
 const PKG_CLONE = path.resolve(fileURLToPath(new URL('../../../plugin/', import.meta.url)))
-const DO_CLONE = !fs.existsSync(path.join(PKG_EMBUTIDO, MANIFESTO)) && fs.existsSync(path.join(PKG_CLONE, MANIFESTO))
+const DO_CLONE = fs.existsSync(path.join(PKG_CLONE, 'hooks', 'register.tsx'))
 const PKG_PLUGIN = DO_CLONE ? PKG_CLONE : PKG_EMBUTIDO
 const PKG_ORIGEM = DO_CLONE ? 'clone do repositório' : 'pacote da skill'
 const PKG_SERVER = path.join(PKG_PLUGIN, 'web', 'server.mjs')
@@ -361,9 +363,9 @@ function lerPacote(precisaServidor) {
     throw new Sair(
       1,
       `Não achei o plugin para instalar (${PKG_ORIGEM}: ${PKG_PLUGIN}).`,
-      'O instalador procura em dois lugares:',
-      `  - no pacote da skill: ${PKG_EMBUTIDO}`,
-      `  - num clone do repositório: ${PKG_CLONE}`,
+      'O instalador escolhe a origem assim:',
+      `  - num clone do repositório (onde existe ${path.join(PKG_CLONE, 'hooks', 'register.tsx')}): a pasta plugin/ do clone, ${PKG_CLONE}`,
+      `  - fora de um clone: a pasta do pacote da skill, ${PKG_EMBUTIDO}`,
       'Rode-o de dentro do pacote .skill completo ou de um clone inteiro do repositório (ou gere o pacote de novo: node scripts/gerar-skill.mjs).',
     )
   }
@@ -465,7 +467,10 @@ function chavesSalaAtivas(obj) {
   return Object.keys(obj.enabledPlugins).filter((k) => k.startsWith('sala-agentes@') && obj.enabledPlugins[k] === true)
 }
 
-/** Calcula o settings.json novo para instalar. Não grava. */
+/**
+ * Calcula o settings.json novo para instalar. Não grava. Cada mudança traz as duas redações:
+ * `feito` (passado, para quando gravou) e `faria` (infinitivo, para a simulação e o resumo dela).
+ */
 function planejarSettings(st, registro) {
   const obj = JSON.parse(JSON.stringify(st.obj))
   if (obj.env === undefined) obj.env = {}
@@ -476,7 +481,14 @@ function planejarSettings(st, registro) {
   const atuais = dividirPastas(env[VAR_DIRS])
   if (!temPasta(atuais)) {
     env[VAR_DIRS] = [...atuais, PLUGIN_DEST].join(path.delimiter)
-    mudancas.push(atuais.length > 0 ? `settings.json: acrescentei a pasta do plugin ao ${VAR_DIRS} (as outras pastas ficaram)` : `settings.json: criei ${VAR_DIRS} com a pasta do plugin`)
+    mudancas.push(
+      atuais.length > 0
+        ? {
+            feito: `acrescentei a pasta do plugin ao ${VAR_DIRS} (as outras pastas ficaram)`,
+            faria: `acrescentar a pasta do plugin ao ${VAR_DIRS} (as outras pastas ficariam)`,
+          }
+        : { feito: `criei ${VAR_DIRS} com a pasta do plugin`, faria: `criar ${VAR_DIRS} com a pasta do plugin` },
+    )
   }
 
   const watch = env[VAR_WATCH]
@@ -485,7 +497,10 @@ function planejarSettings(st, registro) {
   if (watchFalta) {
     env[VAR_WATCH] = '1'
     colocouWatch = true
-    mudancas.push(`settings.json: liguei ${VAR_WATCH}=1 (os chats recarregam o plugin sozinhos)`)
+    mudancas.push({
+      feito: `liguei ${VAR_WATCH}=1 (os chats recarregam o plugin sozinhos)`,
+      faria: `ligar ${VAR_WATCH}=1 (os chats recarregariam o plugin sozinhos)`,
+    })
   } else {
     colocouWatch = registro.colocouWatch === true && String(watch).trim() === '1'
     if (!/^(1|true)$/i.test(String(watch).trim())) {
@@ -695,29 +710,35 @@ function apagarPidGravado() {
 }
 
 /**
- * Encerra o painel desta conta. Primeiro confere o PID gravado em painel.pid; se ele não estiver mais rodando o
- * server.mjs instalado, procura quem escuta na porta. Só encerra processo cuja linha de comando mostre o
- * server.mjs instalado: qualquer outro programa, ou um painel de outra pasta ou de outra conta, não é tocado.
+ * Descobre qual(is) processo(s) é(são) o painel desta conta, sem encerrar nada. Primeiro confere o PID gravado em
+ * painel.pid; se ele não estiver mais rodando o server.mjs instalado, procura quem escuta na porta. Só conta como painel
+ * o processo cuja linha de comando mostre o server.mjs instalado: qualquer outro programa, ou um painel de outra pasta
+ * ou de outra conta, não é alvo. Devolve { alvos: [pid], alheio?, motivo? } (alvos vazio = não achei o que encerrar).
+ */
+function alvosDoPainel(porta) {
+  const gravado = lerPidGravado()
+  if (gravado && gravado !== process.pid && ehOPainelInstalado(gravado)) return { alvos: [gravado] }
+  const pids = pidsDaPorta(porta).filter((p) => p !== process.pid)
+  if (pids.length === 0) return { alvos: [], motivo: 'não consegui descobrir qual programa usa a porta' }
+  for (const pid of pids) {
+    if (!ehOPainelInstalado(pid)) {
+      return {
+        alvos: [],
+        alheio: true,
+        motivo: `a porta ${porta} é usada por um programa que não é o painel instalado nesta conta (processo ${pid}), e não mexi nele`,
+      }
+    }
+  }
+  return { alvos: pids }
+}
+
+/**
+ * Encerra o painel desta conta (os alvos de alvosDoPainel) e espera a porta ficar livre.
  * Devolve { parou, alheio?, motivo? }.
  */
 async function pararPainel(porta, host) {
-  let alvos = []
-  const gravado = lerPidGravado()
-  if (gravado && gravado !== process.pid && ehOPainelInstalado(gravado)) alvos = [gravado]
-  if (alvos.length === 0) {
-    const pids = pidsDaPorta(porta).filter((p) => p !== process.pid)
-    if (pids.length === 0) return { parou: false, motivo: 'não consegui descobrir qual programa usa a porta' }
-    for (const pid of pids) {
-      if (!ehOPainelInstalado(pid)) {
-        return {
-          parou: false,
-          alheio: true,
-          motivo: `a porta ${porta} é usada por um programa que não é o painel instalado nesta conta (processo ${pid}), e não mexi nele`,
-        }
-      }
-    }
-    alvos = pids
-  }
+  const { alvos, alheio, motivo } = alvosDoPainel(porta)
+  if (alvos.length === 0) return { parou: false, alheio, motivo }
   for (const pid of alvos) {
     try {
       process.kill(pid)
@@ -797,7 +818,7 @@ function mostrarLinks(web, porta) {
 // ───────────────────────── Argumentos ─────────────────────────
 
 const OPCOES_COM_VALOR = new Set(['equipe', 'onde', 'projeto', 'porta'])
-const OPCOES_SEM_VALOR = new Set(['verificar', 'simular', 'substituir', 'painel', 'iniciar-com-windows', 'forcar', 'desinstalar', 'ajuda'])
+const OPCOES_SEM_VALOR = new Set(['verificar', 'simular', 'substituir', 'painel', 'parar-painel', 'iniciar-com-windows', 'forcar', 'desinstalar', 'ajuda'])
 
 function lerArgumentos(argv) {
   const o = {}
@@ -833,10 +854,11 @@ const AJUDA = `Instalador da Sala dos Agentes (plugin do Claude Code)
 Uso: node instalar.mjs [opções]
 
 Dois jeitos de rodar (o plugin é achado sozinho; a saída diz de onde veio):
-  - De dentro do pacote .skill (extraído):   node sala-agentes/scripts/instalar.mjs [opções]
-    Usa a pasta assets/plugin do pacote.
   - De um clone do repositório (raiz do clone): node skill/sala-agentes/scripts/instalar.mjs [opções]
-    Sem assets/plugin, usa a pasta plugin/ da raiz do clone (só o que o pacote levaria: sem tests/ nem web/sample/).
+    Usa sempre a pasta plugin/ da raiz do clone (só o que o pacote levaria: sem tests/ nem web/sample/), mesmo que
+    exista uma assets/plugin ao lado: ela é gerada e pode estar velha.
+  - De dentro do pacote .skill (extraído, fora de um clone): node sala-agentes/scripts/instalar.mjs [opções]
+    Usa a pasta assets/plugin do pacote.
 
 Exemplo mínimo (instala o plugin e liga o painel web):
   node skill/sala-agentes/scripts/instalar.mjs --painel
@@ -850,12 +872,18 @@ Opções:
   --projeto <pasta>           Pasta do projeto (obrigatória com --onde projeto; deve existir).
   --substituir                Permite trocar uma equipe existente e diferente (guarda cópia .bak-AAAAMMDD-HHMMSS).
   --painel                    Liga o painel web agora (e o reinicia se o server.mjs instalado mudou).
+  --parar-painel              Só encerra o painel web em execução desta conta (confere o painel.pid e, depois, a porta;
+                              só mexe em processo que roda o server.mjs instalado aqui). Não tira o atalho de
+                              inicialização nem o plugin. Aceita --simular; não combina com as outras opções.
   --iniciar-com-windows       Com --painel, no Windows: o painel sobe sozinho quando você entra no Windows.
   --porta <n>                 Porta do painel; só vale se o web.json ainda não existe.
   --forcar                    Instala mesmo se a versão instalada for mais nova que a do pacote.
   --desinstalar               Tira o plugin, a entrada dele no settings.json, o atalho de inicialização e para o painel.
                               Equipes, web.json e retratos ficam.
   --ajuda                     Mostra este texto.
+
+Depois de instalar, ele roda o "claude plugin validate" (opcional) com uma configuração temporária vazia, para o CLI
+não reescrever o seu settings.json.
 
 Códigos de saída: 0 deu certo; 1 erro; 2 precisa da confirmação do usuário (nada foi alterado).
 Para testar sem tocar na conta real: variáveis SALA_HOME e SALA_STARTUP_DIR.
@@ -1041,7 +1069,7 @@ function prepararEquipe(o) {
 async function pararParaReiniciar({ simular, porta, host, motivo, marca, avisos }) {
   if (simular) {
     info(`O painel está no ar na porta ${porta}; reiniciaria (${motivo}).`)
-    marca('painel reiniciado com o server.mjs novo')
+    marca('reiniciar o painel com o server.mjs novo')
     return { parou: true }
   }
   info(`O painel está no ar na porta ${porta} (${motivo}): reiniciando.`)
@@ -1085,6 +1113,11 @@ async function instalar(o) {
   const avisos = []
   const ficaram = [] // arquivos que não são do pacote e foram deixados em paz
   const marca = (t) => mudancas.push(t)
+  // Na simulação o resumo diz "O que mudaria:", então cada item precisa estar no infinitivo; ao gravar, no passado.
+  const dito = (passado, infinitivo) => (simular ? infinitivo : passado)
+  // Etapas numeradas na sequência do que realmente vai rodar (a equipe e o painel só aparecem quando há o que fazer).
+  let etapaN = 0
+  const etapa = (nome) => titulo(`${++etapaN}. ${nome}`)
 
   titulo(simular ? 'Simulação: nada será gravado' : 'Instalando a Sala dos Agentes')
   if (TESTE) aviso(`MODO DE TESTE: pasta pessoal = ${HOME}`)
@@ -1092,6 +1125,9 @@ async function instalar(o) {
   // ── Análise: nada é gravado aqui. Qualquer problema para antes de mexer em algo.
   const pacote = lerPacote(Boolean(o.painel))
   info(`Origem do plugin: ${PKG_ORIGEM} (${PKG_PLUGIN})`)
+  if (DO_CLONE && existe(path.join(PKG_EMBUTIDO, MANIFESTO))) {
+    info(`(Há também ${PKG_EMBUTIDO}, mas num clone vale a pasta plugin/ do clone: a do pacote pode estar velha.)`)
+  }
   const alvoDoLink = linkDaPasta(PLUGIN_DEST)
   if (alvoDoLink) {
     throw new Sair(
@@ -1155,8 +1191,8 @@ async function instalar(o) {
     return 2
   }
 
-  // ── 1. Plugin
-  titulo('1. Plugin')
+  // ── Plugin
+  etapa('Plugin')
   if (plano.copiar.length === 0) ok(`Já está em dia (${PLUGIN_DEST}).`)
   else {
     info(`${simular ? 'Copiaria' : 'Copiando'} ${plano.copiar.length} de ${plano.total} arquivo(s) para ${PLUGIN_DEST}.`)
@@ -1167,12 +1203,17 @@ async function instalar(o) {
         throw new Sair(1, `Não consegui copiar o plugin: ${e.message}`, 'Pode ter ficado pela metade; rode o instalador de novo.')
       }
     }
-    marca(`plugin ${inst === null ? 'instalado' : 'atualizado'} em ${PLUGIN_DEST} (${plano.copiar.length} arquivo(s) copiado(s) do ${PKG_ORIGEM})`)
+    marca(
+      dito(
+        `plugin ${inst === null ? 'instalado' : 'atualizado'} em ${PLUGIN_DEST} (${plano.copiar.length} arquivo(s) copiado(s) do ${PKG_ORIGEM})`,
+        `${inst === null ? 'instalar' : 'atualizar'} o plugin em ${PLUGIN_DEST} (copiar ${plano.copiar.length} arquivo(s) do ${PKG_ORIGEM})`,
+      ),
+    )
   }
   if (plano.sobrando.length > 0) ficaram.push(...plano.sobrando)
 
-  // ── 2. settings.json
-  titulo('2. settings.json')
+  // ── settings.json
+  etapa('settings.json')
   let ps = planejarSettings(st, registro)
   let copia = null
   if (ps.mudou && !simular) {
@@ -1189,15 +1230,15 @@ async function instalar(o) {
   avisos.push(...ps.avisos)
   if (!ps.mudou) ok(`Já tem ${VAR_DIRS} com a pasta do plugin e ${VAR_WATCH} ligado.`)
   else {
-    for (const m of ps.mudancas) info(`${simular ? 'Faria' : 'Feito'}: ${m.replace(/^settings\.json: /, '')}`)
+    for (const m of ps.mudancas) info(`${simular ? 'Faria' : 'Feito'}: ${dito(m.feito, m.faria)}`)
     if (copia) info(`Cópia de segurança: ${copia}`)
     else if (simular && st.existe) info(`(Guardaria uma cópia de segurança em ${SETTINGS}.bak-sala-<data>)`)
-    for (const m of ps.mudancas) marca(m)
+    for (const m of ps.mudancas) marca(`settings.json: ${dito(m.feito, m.faria)}`)
   }
 
-  // ── 3. Equipe
+  // ── Equipe
   if (eq) {
-    titulo('3. Equipe')
+    etapa('Equipe')
     info(`Destino: ${eq.destino} (${eq.onde === 'projeto' ? 'vale só nesse projeto' : 'vale para a conta toda'})`)
     if (eq.situacao === 'igual') ok('Esse arquivo já tem exatamente essa equipe.')
     else {
@@ -1218,18 +1259,21 @@ async function instalar(o) {
       }
       marca(
         eq.situacao === 'igual-com-bom'
-          ? `equipe regravada sem BOM em ${eq.destino}`
-          : `equipe ${eq.situacao === 'nova' ? 'gravada' : 'substituída'} em ${eq.destino}`,
+          ? dito(`equipe regravada sem BOM em ${eq.destino}`, `regravar a equipe sem BOM em ${eq.destino}`)
+          : dito(
+              `equipe ${eq.situacao === 'nova' ? 'gravada' : 'substituída'} em ${eq.destino}`,
+              `${eq.situacao === 'nova' ? 'gravar' : 'substituir'} a equipe em ${eq.destino}`,
+            ),
       )
     }
   }
 
-  // ── 4. Painel
+  // ── Painel
   const estado = { painelHash: typeof registro.painelHash === 'string' ? registro.painelHash : null }
   let atalho = null
   let painelFalhou = false
   if (o.painel || portaNova !== null) {
-    titulo('4. Painel web')
+    etapa('Painel web')
     const r = await etapaPainel(o, { simular, portaNova, plano, registro, estado, marca, avisos })
     atalho = r.atalho
     painelFalhou = r.falhou
@@ -1238,14 +1282,14 @@ async function instalar(o) {
     const web = lerWeb()
     const { porta, host } = portaEHost(web)
     if (!painelNuncaSubiu(web) && (await saude(porta, host))) {
-      titulo('4. Painel web')
+      etapa('Painel web')
       const r = await reiniciarPainelAntigo({ simular, porta, host, estado, marca, avisos })
       painelFalhou = r.falhou
     }
   }
   if (atalho === null && STARTUP_VBS && existe(STARTUP_VBS)) atalho = STARTUP_VBS
 
-  // ── 5. Registro
+  // ── Registro
   if (!simular) {
     try {
       gravar(
@@ -1322,7 +1366,11 @@ async function etapaPainel(o, { simular, portaNova, plano, registro, estado, mar
     } else if (!(jaExistiaWeb && web && web.port === portaNova)) {
       info(`${simular ? 'Gravaria' : 'Gravando'} a porta ${portaNova} em ${WEB_JSON}${jaExistiaWeb ? ' (o painel ainda não tinha subido; os outros campos ficam)' : ''}.`)
       if (!simular) gravar(WEB_JSON, JSON.stringify({ ...(web || {}), port: portaNova }, null, 2) + '\n')
-      marca(`web.json ${jaExistiaWeb ? 'ajustado' : 'criado'} com a porta ${portaNova}`)
+      marca(
+        simular
+          ? `${jaExistiaWeb ? 'ajustar' : 'criar'} o web.json com a porta ${portaNova}`
+          : `web.json ${jaExistiaWeb ? 'ajustado' : 'criado'} com a porta ${portaNova}`,
+      )
       web = { ...(web || {}), port: portaNova }
     }
   }
@@ -1337,7 +1385,7 @@ async function etapaPainel(o, { simular, portaNova, plano, registro, estado, mar
     if (mudouLocal) {
       info(`${simular ? 'Geraria' : 'Gerando'} ${VBS_LOCAL}`)
       if (!simular) gravar(VBS_LOCAL, vbs)
-      marca(`script de inicialização do painel gerado em ${VBS_LOCAL}`)
+      marca(simular ? `gerar o script de inicialização do painel em ${VBS_LOCAL}` : `script de inicialização do painel gerado em ${VBS_LOCAL}`)
     }
     const jaTem = existe(STARTUP_VBS)
     if (o['iniciar-com-windows'] || jaTem) {
@@ -1351,7 +1399,11 @@ async function etapaPainel(o, { simular, portaNova, plano, registro, estado, mar
             avisos.push(`Não consegui gravar o atalho de inicialização (${e.message}).`)
           }
         }
-        marca(`atalho de inicialização ${jaTem ? 'atualizado' : 'criado'} em ${STARTUP_VBS}`)
+        marca(
+          simular
+            ? `${jaTem ? 'atualizar' : 'criar'} o atalho de inicialização em ${STARTUP_VBS}`
+            : `atalho de inicialização ${jaTem ? 'atualizado' : 'criado'} em ${STARTUP_VBS}`,
+        )
       } else ok('Atalho de inicialização já está em dia.')
       if (existe(STARTUP_VBS) || simular) resultado.atalho = STARTUP_VBS
     } else {
@@ -1392,7 +1444,7 @@ async function etapaPainel(o, { simular, portaNova, plano, registro, estado, mar
   if (simular) {
     if (!noAr) {
       info(`Subiria o painel (node ${servidor}) e esperaria o /health na porta ${porta}.`)
-      marca(`painel ligado na porta ${porta}`)
+      marca(`ligar o painel na porta ${porta}`)
     }
     return resultado
   }
@@ -1423,21 +1475,48 @@ async function etapaPainel(o, { simular, portaNova, plano, registro, estado, mar
   return resultado
 }
 
+/**
+ * Valida o plugin instalado com `claude plugin validate`, que é opcional. O CLI mexe na configuração que usa (reescreve o
+ * settings.json: reordena as chaves, migra o "model", cria backups/), então ele roda com CLAUDE_CONFIG_DIR apontando para
+ * uma pasta temporária vazia, criada e apagada aqui: o settings.json da conta nunca é lido nem tocado por ele.
+ * Isso vale também no modo de teste. Nada aqui interrompe a instalação: se não deu para validar, só avisa.
+ */
 function validarComClaude() {
   const nome = IS_WIN ? 'claude.exe' : 'claude'
-  const env = { ...process.env }
-  if (TESTE) {
-    env.USERPROFILE = HOME
-    env.HOME = HOME
-  }
-  const r = spawnSync(nome, ['plugin', 'validate', PLUGIN_DEST], { encoding: 'utf8', timeout: 90000, windowsHide: true, env })
-  if (r.error) {
-    info(r.error.code === 'ENOENT' ? 'O comando claude não está no PATH; pulei a validação do plugin (é opcional).' : `Não consegui rodar o claude plugin validate (${r.error.message}); pulei.`)
+  let configTemp = null
+  try {
+    configTemp = fs.mkdtempSync(path.join(os.tmpdir(), 'sala-validar-'))
+  } catch (e) {
+    info(`Não consegui criar a pasta temporária para o claude plugin validate (${e.message}); pulei a validação (é opcional).`)
     return
   }
-  const ultima = `${r.stdout || ''}\n${r.stderr || ''}`.split(/\r?\n/).map((s) => s.trim()).filter(Boolean).pop() || '(sem saída)'
-  if (r.status === 0) ok(`claude plugin validate: ${ultima}`)
-  else aviso(`claude plugin validate terminou com código ${r.status}: ${ultima}`)
+  try {
+    const env = { ...process.env, CLAUDE_CONFIG_DIR: configTemp }
+    if (TESTE) {
+      // por garantia: no teste, nem a pasta pessoal verdadeira entra na história
+      env.USERPROFILE = HOME
+      env.HOME = HOME
+    }
+    const r = spawnSync(nome, ['plugin', 'validate', PLUGIN_DEST], { encoding: 'utf8', timeout: 90000, windowsHide: true, env })
+    if (r.error) {
+      info(
+        r.error.code === 'ENOENT'
+          ? 'O comando claude não está no PATH; pulei a validação do plugin (é opcional).'
+          : `Não deu para validar o plugin com o claude plugin validate (${r.error.message}); pulei (é opcional).`,
+      )
+      return
+    }
+    const ultima = `${r.stdout || ''}\n${r.stderr || ''}`.split(/\r?\n/).map((s) => s.trim()).filter(Boolean).pop() || '(sem saída)'
+    if (r.status === 0) ok(`claude plugin validate: ${ultima}`)
+    else {
+      aviso(`claude plugin validate terminou com código ${r.status}: ${ultima}`)
+      info('Ele roda com uma configuração vazia (para não mexer no seu settings.json), então pode ser só login ou configuração faltando e não um defeito do plugin. A instalação em si não foi afetada.')
+    }
+  } finally {
+    try {
+      fs.rmSync(configTemp, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 })
+    } catch {}
+  }
 }
 
 // ───────────────────────── Desinstalar ─────────────────────────
@@ -1539,7 +1618,7 @@ async function desinstalar(o) {
   if (noAr || pidDoPainel) {
     if (simular) {
       info(`O painel ${noAr ? `está no ar na porta ${porta}` : 'está rodando'}; seria encerrado (se for o da sala).`)
-      mudancas.push('painel encerrado')
+      mudancas.push('encerraria o painel')
     } else {
       const r = await pararPainel(porta, host)
       if (r.parou) {
@@ -1632,7 +1711,7 @@ async function desinstalar(o) {
     }
     if (!ps.mudou) info('O settings.json não tinha a pasta do plugin.')
     else {
-      for (const m of ps.mudancas) info(`${simular ? 'Faria' : 'Feito'}: ${m}`)
+      for (const m of ps.mudancas) info(simular ? m : `Feito: ${m}`) // na simulação o texto já está no condicional ("tiraria ...")
       for (const i of ps.infos) info(i)
       if (copia) info(`Cópia de segurança: ${copia}`)
       mudancas.push(...ps.mudancas)
@@ -1669,6 +1748,62 @@ async function desinstalar(o) {
   return 0
 }
 
+// ───────────────────────── Parar o painel ─────────────────────────
+
+/**
+ * --parar-painel: encerra só o painel web desta conta, com a mesma checagem de sempre (painel.pid, depois a porta, e só
+ * mexe em processo que roda o server.mjs instalado aqui). Não tira o atalho de inicialização nem o plugin.
+ * Código 0 se parou ou se não havia painel desta conta no ar; 1 se havia e não foi possível encerrar.
+ */
+async function pararPainelComando(o) {
+  const simular = Boolean(o.simular)
+  titulo(simular ? 'Simulação: nenhum processo será encerrado' : 'Parando o painel web')
+  if (TESTE) aviso(`MODO DE TESTE: pasta pessoal = ${HOME}`)
+
+  const web = lerWeb()
+  const { porta, host } = portaEHost(web)
+  const pidGravado = lerPidGravado()
+  const pidDoPainel = Boolean(pidGravado && pidGravado !== process.pid && ehOPainelInstalado(pidGravado))
+  // Sem web.json o painel nunca subiu nesta conta: não sondo a porta padrão, que pode ser de outra conta.
+  const noAr = web ? await saude(porta, host) : false
+
+  if (!noAr && !pidDoPainel) {
+    info(
+      web
+        ? `Nenhum painel desta conta no ar: nada respondeu em /health na porta ${porta} e o painel.pid não aponta para um painel rodando.`
+        : `O painel nunca foi ligado nesta conta (não há web.json em ${WEB_JSON}) e o painel.pid não aponta para um painel rodando.`,
+    )
+    if (existe(PID_FILE) && !simular) apagarPidGravado() // sobrou de um painel que já não existe
+    info('Nada para encerrar.')
+    return 0
+  }
+
+  if (simular) {
+    const { alvos, motivo } = alvosDoPainel(porta)
+    if (alvos.length > 0) info(`Encerraria o painel desta conta (porta ${porta}, processo ${alvos.join(', ')}).`)
+    else info(`O painel não seria encerrado: ${motivo}.`)
+    info('(Simulação: nada foi encerrado.)')
+    return 0
+  }
+
+  info(`Procurando o painel desta conta (porta ${porta})...`)
+  const r = await pararPainel(porta, host)
+  if (r.parou) {
+    ok(`Painel encerrado (porta ${porta}).`)
+    info(`O plugin continua instalado${STARTUP_VBS && existe(STARTUP_VBS) ? ' e o atalho de inicialização continua na pasta Inicializar: o painel volta a subir no próximo login' : ''}.`)
+    info('Para ligar de novo: node instalar.mjs --painel')
+    return 0
+  }
+  if (r.alheio) {
+    aviso(`Não encerrei nada: ${r.motivo}.`)
+    info('O painel desta conta não está rodando por esse processo; se quiser liberar a porta, encerre o outro programa à mão.')
+    return 0
+  }
+  falha(`Não consegui encerrar o painel: ${r.motivo}.`)
+  info('Encerre o processo node do painel à mão (Gerenciador de Tarefas) e confira com --verificar.')
+  return 1
+}
+
 // ───────────────────────── Principal ─────────────────────────
 
 async function main() {
@@ -1679,6 +1814,11 @@ async function main() {
   }
   if (Number.parseInt(process.versions.node, 10) < 18) {
     throw new Sair(1, `Este instalador precisa do Node 18 ou mais novo (aqui é ${process.versions.node}). Instale o Node em https://nodejs.org e rode de novo.`)
+  }
+  if (o['parar-painel']) {
+    const outras = ['verificar', 'desinstalar', 'painel', 'equipe', 'onde', 'projeto', 'porta', 'substituir', 'forcar', 'iniciar-com-windows'].filter((k) => o[k] !== undefined)
+    if (outras.length > 0) throw new Sair(1, `--parar-painel é uma operação à parte e não combina com ${outras.map((k) => `--${k}`).join(', ')} (só aceita --simular).`)
+    return pararPainelComando(o)
   }
   if (o.verificar && o.desinstalar) throw new Sair(1, 'Use --verificar ou --desinstalar, não os dois juntos.')
   if (o.onde !== undefined && o.onde !== 'conta' && o.onde !== 'projeto') throw new Sair(1, `--onde precisa ser "conta" ou "projeto" (recebi "${o.onde}").`)

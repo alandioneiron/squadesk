@@ -123,10 +123,31 @@ export function detailFor(tool: string, input: Record<string, unknown>): string 
   return tool
 }
 
-export function fmtTime(ms: number): string {
+/** O nome de fuso (IANA) se o Intl o aceita; vazio, ausente ou inválido vira 'UTC'. */
+export function validZone(zone: unknown): string {
+  try {
+    if (typeof zone === 'string' && zone.trim() !== '') {
+      new Intl.DateTimeFormat('en-CA', { timeZone: zone })
+      return zone
+    }
+  } catch {}
+  return 'UTC'
+}
+
+/** Fuso do sistema, lido a cada uso (se o computador mudar de fuso, a sala acompanha). */
+export function localZone(): string {
+  try {
+    return validZone(Intl.DateTimeFormat().resolvedOptions().timeZone)
+  } catch {
+    return 'UTC'
+  }
+}
+
+/** HH:MM no fuso do sistema (ou no `zone` dado). */
+export function fmtTime(ms: number, zone: string = localZone()): string {
   try {
     return new Intl.DateTimeFormat('pt-BR', {
-      timeZone: 'America/Sao_Paulo',
+      timeZone: zone,
       hour: '2-digit',
       minute: '2-digit',
     }).format(new Date(ms))
