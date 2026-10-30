@@ -7,3 +7,6 @@ skill/sala-agentes/assets/plugin/
 
 # Prints do QA com dados reais dos chats (e a chave do painel): ficam só no PC
 docs/prints/qa-*
+
+# Backup de contexto da mudança de máquina: só no repositório privado
+_backup-contexto/
