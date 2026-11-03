@@ -79,6 +79,7 @@ Como ligar, usar e desligar cada recurso (sala, mesas, guia automático, avisos,
 | `plugin/web/` | Painel web: Node puro, sem dependências. Formato dos retratos em `SNAPSHOT.md` |
 | `skill/sala-agentes/` | Skill de instalação: `SKILL.md`, `scripts/instalar.mjs`, `references/` |
 | `scripts/` | `publicar.mjs` (copia o plugin testado para a pasta instalada), `gerar-skill.mjs` (gera o `.skill`), `gerar-exemplos.mts` (retratos de exemplo) |
+| `docs/vault/` | Memória de quem desenvolve (vault do Obsidian): decisões, fluxo, checklists, changelog e handoff entre sessões. As regras para as sessões de IA estão no `CLAUDE.md` |
 
 ## Desenvolver
 

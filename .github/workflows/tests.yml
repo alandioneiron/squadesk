@@ -1,0 +1,25 @@
+name: tests
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+permissions:
+  contents: read
+
+# Só a parte em Node. Os testes do plugin (claude plugin test ./plugin) precisam do
+# Claude Code e rodam na máquina de quem desenvolve, pelo scripts/publicar.mjs.
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Sintaxe dos scripts
+        run: for f in scripts/*.mjs skill/sala-agentes/scripts/*.mjs plugin/web/*.mjs; do node --check "$f"; done
+      - name: Instalador em modo simulação, numa conta de teste
+        run: |
+          mkdir -p "$RUNNER_TEMP/home" "$RUNNER_TEMP/start"
+          SALA_HOME="$RUNNER_TEMP/home" SALA_STARTUP_DIR="$RUNNER_TEMP/start" node skill/sala-agentes/scripts/instalar.mjs --simular
