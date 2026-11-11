@@ -24,7 +24,7 @@ tags: [tarefa]
 - [x] `claude plugin validate` e `claude plugin test` (25 de 25)
 - [x] Conferência visual do painel com os exemplos (PC e 375 px)
 - [x] Publicar na máquina (`publicar.mjs`), reiniciar o painel, gerar o `.skill`
-- [ ] Commit e push para a `main` (o dono pediu "atualiza no github")
+- [x] Commit e push para a `main` (o dono pediu "atualiza no github"): b829b62; primeiro CI verde
 
 ## Pendente no GitHub
 - Abrir a issue desta tarefa e ligar a esta nota (não foi aberta: o pedido foi só de atualizar o código).

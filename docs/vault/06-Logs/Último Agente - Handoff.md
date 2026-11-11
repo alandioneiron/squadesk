@@ -24,5 +24,5 @@ tags: [log, handoff]
 - Pôr o Claude Code CLI no PATH. Até lá, os testes rodam com o executável que vem com o app desktop (a pasta muda a cada versão do app).
 
 ## Próximos passos (na ordem)
-1. Conferir o primeiro CI no GitHub (o workflow em Node chegou junto com a 0.7.0).
+1. O primeiro CI passou. Ele avisa que `actions/checkout@v4` e `actions/setup-node@v4` miram o Node 20, que está obsoleto. Quando mexer no workflow, suba as duas para a versão seguinte.
 2. Abrir as candidatas do [[Roteiro]] como issues, a partir do [[Template - Tarefa]].
