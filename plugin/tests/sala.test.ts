@@ -2,7 +2,7 @@ import { expect, mock, test } from 'claude-code/testing'
 import type { On } from 'claude-code'
 
 import type { AgentRow } from '../types'
-import { pickTitle, today } from '../hooks/live'
+import { dayText, pickTitle, today } from '../hooks/live'
 import { activityFor, detailFor, emptyLead, fmtDuration, fmtTime, fmtTokens, localZone, roster, trailText, validZone } from '../hooks/room'
 import {
   addRoleTo,
@@ -424,6 +424,15 @@ test('custo, histórico, resumo do dia, outros chats, link do painel e retrato d
   expect(snap.project).toBe('proj')
   expect(snap.version).toBe('0.3.0')
   expect(snap.tokens).toBe(1_700)
+  // Detalhe separado: o total não muda de regra e a leitura de cache fica à parte.
+  expect([snap.tokIn, snap.tokOut, snap.tokCache]).toEqual([1_200, 500, 9_000])
+  const qa = snap.agents.find((a: { title: string }) => a.title === 'QA Android')
+  expect([qa.tokens, qa.tokIn, qa.tokOut, qa.tokCache]).toEqual([1_700, 1_200, 500, 9_000])
+  const lead = snap.agents.find((a: { key: string }) => a.key === 'lead')
+  expect([lead?.tokIn, lead?.tokOut, lead?.tokCache]).toEqual([0, 0, 0])
+  expect(snap.daily.roles[0]).toMatchObject({ tokens: 1_700, tokIn: 1_200, tokOut: 500, tokCache: 9_000 })
+  expect(await text(/1,7 mil tokens \(entrada 1,2 mil · saída 500 · cache lido 9,0 mil\)/)).toBeDefined()
+  expect(dayText(snap.daily, 'proj')).toContain('| Papel | Tarefas | Tempo | Tokens | Entrada | Saída | Cache lido |')
   expect(snap.agents.some((a: { title: string; temp: boolean }) => a.title === 'QA Android' && a.temp)).toBe(true)
   expect(snap.svg).toContain('<svg')
   expect(snap.title).toBe('Meu chat')

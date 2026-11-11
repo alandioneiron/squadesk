@@ -4,8 +4,8 @@
  "title": "Cadastro de férias",
  "project": "portal-rh",
  "cwd": "C:\\projetos\\portal-rh",
- "startedAt": 1791470666845,
- "updatedAt": 1791467066845,
+ "startedAt": 1794430205415,
+ "updatedAt": 1794426605415,
  "ended": true,
  "version": "exemplo",
  "team": {
@@ -113,6 +113,9 @@
  "busy": 1,
  "waiting": 0,
  "tokens": 150000,
+ "tokIn": 138000,
+ "tokOut": 12000,
+ "tokCache": 1500000,
  "agents": [
   {
    "key": "lead",
@@ -123,8 +126,11 @@
    "color": "#C9A24B",
    "detail": "→ resumo final",
    "task": "",
-   "taskStart": 1791473666845,
+   "taskStart": 1794433205415,
    "tokens": 150000,
+   "tokIn": 138000,
+   "tokOut": 12000,
+   "tokCache": 1500000,
    "temp": false,
    "trail": []
   },
@@ -139,6 +145,9 @@
    "task": "",
    "taskStart": 0,
    "tokens": 0,
+   "tokIn": 0,
+   "tokOut": 0,
+   "tokCache": 0,
    "temp": false,
    "trail": []
   },
@@ -153,6 +162,9 @@
    "task": "",
    "taskStart": 0,
    "tokens": 0,
+   "tokIn": 0,
+   "tokOut": 0,
+   "tokCache": 0,
    "temp": false,
    "trail": []
   },
@@ -167,6 +179,9 @@
    "task": "",
    "taskStart": 0,
    "tokens": 0,
+   "tokIn": 0,
+   "tokOut": 0,
+   "tokCache": 0,
    "temp": false,
    "trail": []
   },
@@ -181,6 +196,9 @@
    "task": "",
    "taskStart": 0,
    "tokens": 0,
+   "tokIn": 0,
+   "tokOut": 0,
+   "tokCache": 0,
    "temp": false,
    "trail": []
   },
@@ -195,30 +213,39 @@
    "task": "",
    "taskStart": 0,
    "tokens": 0,
+   "tokIn": 0,
+   "tokOut": 0,
+   "tokCache": 0,
    "temp": false,
    "trail": []
   }
  ],
  "log": [
   {
-   "at": 1791474176845,
+   "at": 1794433715415,
    "text": "Tech Lead → Documentador (Haiku): Guia de uso do portal"
   }
  ],
  "daily": {
-  "date": "2026-10-08",
+  "date": "2026-11-11",
   "roles": [
    {
     "role": "Tech Lead",
     "tasks": 4,
     "ms": 2400000,
-    "tokens": 180000
+    "tokens": 180000,
+    "tokIn": 165600,
+    "tokOut": 14400,
+    "tokCache": 1800000
    },
    {
     "role": "Dev Backend",
     "tasks": 3,
     "ms": 900000,
-    "tokens": 95000
+    "tokens": 95000,
+    "tokIn": 87400,
+    "tokOut": 7600,
+    "tokCache": 950000
    }
   ]
  }

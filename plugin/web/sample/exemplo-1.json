@@ -4,8 +4,8 @@
  "title": "Checkout com Pix",
  "project": "loja-online",
  "cwd": "C:\\projetos\\loja-online",
- "startedAt": 1791470666845,
- "updatedAt": 1791474266845,
+ "startedAt": 1794430205415,
+ "updatedAt": 1794433805415,
  "ended": false,
  "version": "exemplo",
  "team": {
@@ -113,6 +113,9 @@
  "busy": 4,
  "waiting": 1,
  "tokens": 203500,
+ "tokIn": 187220,
+ "tokOut": 16280,
+ "tokCache": 2035000,
  "agents": [
   {
    "key": "lead",
@@ -123,8 +126,11 @@
    "color": "#C9A24B",
    "detail": "→ pagamento Pix",
    "task": "",
-   "taskStart": 1791473666845,
+   "taskStart": 1794433205415,
    "tokens": 150000,
+   "tokIn": 138000,
+   "tokOut": 12000,
+   "tokCache": 1500000,
    "temp": false,
    "trail": []
   },
@@ -137,8 +143,11 @@
    "color": "#E16B01",
    "detail": "$ npm run test:e2e",
    "task": "Rodar o teste do fluxo de pagamento",
-   "taskStart": 1791474086845,
+   "taskStart": 1794433625415,
    "tokens": 1700,
+   "tokIn": 1564,
+   "tokOut": 136,
+   "tokCache": 17000,
    "temp": false,
    "trail": [
     {
@@ -162,6 +171,9 @@
    "task": "",
    "taskStart": 0,
    "tokens": 0,
+   "tokIn": 0,
+   "tokOut": 0,
+   "tokCache": 0,
    "temp": false,
    "trail": []
   },
@@ -174,8 +186,11 @@
    "color": "#FECB81",
    "detail": "pix.service.ts",
    "task": "Gerar o QR Code Pix no checkout",
-   "taskStart": 1791474206845,
+   "taskStart": 1794433745415,
    "tokens": 42000,
+   "tokIn": 38640,
+   "tokOut": 3360,
+   "tokCache": 420000,
    "temp": false,
    "trail": [
     {
@@ -197,8 +212,11 @@
    "color": "#6FA8DC",
    "detail": "webhook.controller.ts",
    "task": "Tratar a confirmação de pagamento",
-   "taskStart": 1791474146845,
+   "taskStart": 1794433685415,
    "tokens": 9800,
+   "tokIn": 9016,
+   "tokOut": 784,
+   "tokCache": 98000,
    "temp": false,
    "trail": [
     {
@@ -222,6 +240,9 @@
    "task": "",
    "taskStart": 0,
    "tokens": 0,
+   "tokIn": 0,
+   "tokOut": 0,
+   "tokCache": 0,
    "temp": false,
    "trail": []
   },
@@ -236,30 +257,39 @@
    "task": "",
    "taskStart": 0,
    "tokens": 0,
+   "tokIn": 0,
+   "tokOut": 0,
+   "tokCache": 0,
    "temp": false,
    "trail": []
   }
  ],
  "log": [
   {
-   "at": 1791474176845,
+   "at": 1794433715415,
    "text": "Tech Lead → Dev Backend (Sonnet): Endpoint do QR Code Pix"
   }
  ],
  "daily": {
-  "date": "2026-10-08",
+  "date": "2026-11-11",
   "roles": [
    {
     "role": "Tech Lead",
     "tasks": 4,
     "ms": 2400000,
-    "tokens": 180000
+    "tokens": 180000,
+    "tokIn": 165600,
+    "tokOut": 14400,
+    "tokCache": 1800000
    },
    {
     "role": "Dev Backend",
     "tasks": 3,
     "ms": 900000,
-    "tokens": 95000
+    "tokens": 95000,
+    "tokIn": 87400,
+    "tokOut": 7600,
+    "tokCache": 950000
    }
   ]
  }

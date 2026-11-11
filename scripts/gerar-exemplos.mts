@@ -35,24 +35,30 @@ type Chat = {
   age?: number
 }
 
+// Exemplo: saída ~8% do total, entrada o resto, cache lido ~10x o total (tokIn + tokOut = tokens).
+const tokSplit = (tokens: number) => {
+  const tokOut = Math.round(tokens * 0.08)
+  return { tokIn: tokens - tokOut, tokOut, tokCache: tokens * 10 }
+}
+
 const row = (
   id: string, role: string, roleName: string, model: string, activity: string,
   detail: string, task: string, born: number, tokens: number, trail: Trail,
 ) => ({
   ...room.emptyLead(),
-  id, role, roleName, model, activity, detail, task, born, since: now, tokens, taskStart: now - born * 60_000, trail,
+  id, role, roleName, model, activity, detail, task, born, since: now, tokens, ...tokSplit(tokens), taskStart: now - born * 60_000, trail,
 })
 
 function snapshot(c: Chat) {
   let agents: Record<string, unknown> = {
-    [LEAD]: { ...room.emptyLead(), activity: 'delegando', detail: c.leadDetail, since: now, tokens: 150_000, taskStart: now - 600_000 },
+    [LEAD]: { ...room.emptyLead(), activity: 'delegando', detail: c.leadDetail, since: now, tokens: 150_000, ...tokSplit(150_000), taskStart: now - 600_000 },
   }
   for (const r of c.rows) agents = team.seatAgent(agents, r)
   return live.buildSnapshot({
     id: c.id, title: c.title, project: c.project, cwd: `C:\\projetos\\${c.project}`,
     startedAt: now - 3_600_000, now: now - (c.age ?? 0), ended: c.ended ?? false, version: 'exemplo',
     team: team.defaultTeam(), agents, log: [{ at: now - 90_000, text: c.log }],
-    daily: { date: live.today(now), roles: [{ role: 'Tech Lead', tasks: 4, ms: 2_400_000, tokens: 180_000 }, { role: 'Dev Backend', tasks: 3, ms: 900_000, tokens: 95_000 }] },
+    daily: { date: live.today(now), roles: [{ role: 'Tech Lead', tasks: 4, ms: 2_400_000, tokens: 180_000, ...tokSplit(180_000) }, { role: 'Dev Backend', tasks: 3, ms: 900_000, tokens: 95_000, ...tokSplit(95_000) }] },
   })
 }
 

@@ -164,6 +164,17 @@ export function fmtTokens(n: number): string {
   return `${(n / 1_000_000).toFixed(1).replace('.', ',')} mi`
 }
 
+/** Detalhe do consumo: "(entrada 480 mil · saída 35 mil · cache lido 12 mi)"; '' sem entrada nem saída. */
+export function fmtTokDetail(t: { tokIn?: number; tokOut?: number; tokCache?: number }): string {
+  const i = t.tokIn ?? 0
+  const o = t.tokOut ?? 0
+  const c = t.tokCache ?? 0
+  if (i + o <= 0) return ''
+  const parts = [`entrada ${fmtTokens(i)}`, `saída ${fmtTokens(o)}`]
+  if (c > 0) parts.push(`cache lido ${fmtTokens(c)}`)
+  return `(${parts.join(' · ')})`
+}
+
 /** "40 s", "3 min", "1 h 05". */
 export function fmtDuration(ms: number): string {
   const s = Math.max(0, Math.round(ms / 1000))
@@ -236,6 +247,9 @@ export type RosterLine = {
   detail: string
   task: string
   tokens: number
+  tokIn: number
+  tokOut: number
+  tokCache: number
   taskStart: number
   trail: TrailItem[]
   temp: boolean
@@ -252,6 +266,9 @@ export function roster(team: Team, agents: Record<string, AgentRow>): RosterLine
     detail: a.detail,
     task: a.task,
     tokens: a.tokens ?? 0,
+    tokIn: a.tokIn ?? 0,
+    tokOut: a.tokOut ?? 0,
+    tokCache: a.tokCache ?? 0,
     taskStart: a.taskStart ?? 0,
     trail: a.trail ?? [],
     temp: isTempRole(a.role),
@@ -269,6 +286,9 @@ export function roster(team: Team, agents: Record<string, AgentRow>): RosterLine
         detail: '',
         task: '',
         tokens: 0,
+        tokIn: 0,
+        tokOut: 0,
+        tokCache: 0,
         taskStart: 0,
         trail: [],
         temp: false,

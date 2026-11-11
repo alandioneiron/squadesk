@@ -7,7 +7,7 @@ Toda decisão de arquitetura ou tecnologia ganha uma entrada. Crie o ADR a parti
 
 As decisões 0002 a 0006 foram tomadas antes de o vault existir. Elas foram registradas aqui em 2026-11-03, com a data em que passaram a valer.
 
-Próximo número: **ADR-0007**
+Próximo número: **ADR-0008**
 
 | ADR | Data | Decisão | Status |
 |---|---|---|---|
@@ -17,6 +17,7 @@ Próximo número: **ADR-0007**
 | ADR-0004 | 2026-10-08 | Nome público Squadesk; manter os nomes técnicos `/sala` e `sala-agentes` | Aceito |
 | ADR-0005 | 2026-10-08 | Repositório público limpo: sem dados pessoais, prints do QA fora do git | Aceito |
 | ADR-0006 | 2026-10-08 | Painel web com chave por porta e edição de mesas só pelo próprio PC | Aceito |
+| ADR-0007 | 2026-11-11 | Tokens separados em campos novos; o total e a sua regra não mudam | Aceito |
 
 ## ADR-0001 - Adotar o método tech-lead-vault
 - **Data:** 2026-11-03
@@ -82,3 +83,18 @@ Próximo número: **ADR-0007**
   - depois guarda um cookie `sala_t_<porta>`; o antigo `sala_t` continua aceito;
   - o editor de mesas só funciona pelo `localhost`, salvo com `allowRemoteEdit`.
 - **Consequências:** cada aparelho abre o link completo uma vez. Num navegador novo, o endereço sem `?t=` mostra "Acesso negado". Os detalhes estão no `docs/MANUAL.md`, seção 5.12.
+
+## ADR-0007 - Tokens separados sem mudar o total
+- **Data:** 2026-11-11
+- **Status:** Aceito
+- **Contexto:** o dono quis saber se a contagem era de entrada ou de saída. O total somava entrada nova, gravação de cache e saída, sem mostrar as partes, e deixava a leitura de cache de fora sem dizer quanto era.
+- **Decisão:** três campos novos em cada agente, no retrato e no resumo do dia:
+  - `tokIn`: entrada nova mais gravação de cache;
+  - `tokOut`: saída;
+  - `tokCache`: leitura de cache, fora do total.
+
+  O campo `tokens` continua com a mesma regra (`tokIn + tokOut`). O desenho da sala, a lista de chats, o Mosaico e a TV continuam só com o total.
+- **Alternativas:**
+  - somar o cache lido no total: o número inflaria sem refletir o custo, que é cerca de 10% do normal;
+  - trocar `tokens` por um objeto: quebraria painéis e retratos 0.6.x.
+- **Consequências:** retratos antigos não têm os campos, e o painel trata a falta como zero, sem detalhe. Chats abertos antes da 0.7.0 só separam os turnos novos. Contrato em `plugin/web/SNAPSHOT.md`.

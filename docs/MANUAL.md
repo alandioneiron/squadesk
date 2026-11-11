@@ -367,7 +367,17 @@ O limite é de 11 mesas fixas.
 ### 5.8 Tokens, cronômetro e histórico
 
 **Ligado por padrão:** sim, é automático.
-- **Tokens:** gasto de cada agente (entrada nova, gravação de cache e saída), somado ao fim de cada turno. Aparece na mesa, na lista e no total do cabeçalho.
+- **Tokens:** gasto de cada agente, somado ao fim de cada turno. Aparece na mesa, na lista e no total do cabeçalho. O total é a soma de duas partes:
+
+  | Parte | O que conta | Entra no total? |
+  |---|---|---|
+  | **Entrada** | O que foi mandado ao modelo e não estava em cache, mais o contexto gravado no cache naquele turno | Sim |
+  | **Saída** | O que o modelo escreveu: texto, comandos, chamadas de ferramenta | Sim |
+  | **Cache lido** | Contexto que o modelo releu do cache. Em conversa longa, cada turno relê quase tudo o que veio antes | Não: aparece à parte |
+
+  O cache lido fica fora do total porque custa cerca de 10% do preço normal: somado, ele inflaria o número sem refletir o gasto real. Na lista de agentes da sala e no painel web, cada agente mostra o detalhe, como "515 mil tokens (entrada 480 mil · saída 35 mil · cache lido 12 mi)". O desenho da sala mostra só o total.
+
+  Chats abertos antes da versão 0.7.0 só começam a separar a partir do primeiro turno depois da atualização: nesses, entrada mais saída pode dar menos que o total.
 - **Cronômetro:** há quanto tempo o agente está na tarefa atual.
 - **Histórico:** os últimos 30 passos de cada agente (operação e alvo).
   - Na sala do chat aparece resumido numa linha, como "editou: a.ts, b.ts · leu: c.md (+2)".
@@ -381,7 +391,7 @@ O limite é de 11 mesas fixas.
 
 ### 5.10 Resumo do dia
 
-**O que é:** por papel, quantas tarefas foram concluídas hoje neste chat, quanto tempo levaram e quantos tokens gastaram. Vem em Markdown, pronto para colar num relatório.
+**O que é:** por papel, quantas tarefas foram concluídas hoje neste chat, quanto tempo levaram e quantos tokens gastaram, com as colunas Entrada, Saída e Cache lido (ver 5.8). Vem em Markdown, pronto para colar num relatório.
 
 **Como usar:** `/sala resumo` ou o botão "Copiar resumo do dia". A seção "Hoje neste chat" da sala mostra o mesmo.
 
@@ -424,7 +434,7 @@ No Windows (PowerShell), `node "$HOME\.claude\mods\sala-agentes\web\server.mjs"`
   A decisão é sua: o Squadesk não mexe no firewall. Sem liberar, só o próprio PC acessa (`localhost`).
 
 **Modos de visualização** (seletor no topo; a escolha fica guardada no navegador):
-- **Lista:** chats à esquerda e a sala escolhida grande à direita, com desenho, agentes, eventos e botão Mesas.
+- **Lista:** chats à esquerda e a sala escolhida grande à direita, com desenho, agentes, eventos e botão Mesas. O cartão "tokens hoje", o cabeçalho da sala e cada agente mostram o detalhe de entrada, saída e cache lido (ver 5.8). A lista de chats, o Mosaico e a TV mostram só o total.
 - **Mosaico:** estilo câmeras de segurança, com divisão Auto, 1, 4, 6, 9 ou 16, paginação e borda laranja em quem espera você. Clique numa tela para ver os detalhes.
 - **TV:** um chat por vez, que troca sozinho a cada 5, 10, 20 ou 30 s e para em quem espera você. Tem letras grandes.
 

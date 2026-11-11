@@ -9,6 +9,7 @@ import {
   emptyLead,
   fmtDuration,
   fmtTime,
+  fmtTokDetail,
   fmtTokens,
   renderSvg,
   roster,
@@ -267,7 +268,11 @@ async function note($: $, text: string) {
   dirty = true
 }
 
-async function addToDay($: $, role: string, add: { tasks: number; ms: number; tokens: number }) {
+async function addToDay(
+  $: $,
+  role: string,
+  add: { tasks: number; ms: number; tokens: number; tokIn: number; tokOut: number; tokCache: number },
+) {
   const now = await $.clock.now()
   await update($, daily, (d: Daily) => addDay(d, now, role, add))
   dirty = true
@@ -277,9 +282,20 @@ async function nameOf($: $, id: string): Promise<string> {
   return titles(await read($, team), await read($, agents))[id] ?? 'Agente'
 }
 
-// Tokens novos do turno: entrada, gravação de cache e saída (a leitura de cache custa ~10% e fica de fora).
-function spent(usage: { input_tokens: number; output_tokens: number; cache_creation_input_tokens: number } | undefined): number {
-  return usage ? usage.input_tokens + usage.output_tokens + usage.cache_creation_input_tokens : 0
+// Tokens do turno. `tokens` = entrada nova + gravação de cache + saída (a leitura de cache custa ~10% e fica de fora, em `tokCache`).
+function spent(
+  usage:
+    | {
+        input_tokens?: number
+        output_tokens?: number
+        cache_creation_input_tokens?: number
+        cache_read_input_tokens?: number
+      }
+    | undefined,
+): { tokens: number; tokIn: number; tokOut: number; tokCache: number } {
+  const tokIn = (usage?.input_tokens ?? 0) + (usage?.cache_creation_input_tokens ?? 0)
+  const tokOut = usage?.output_tokens ?? 0
+  return { tokens: tokIn + tokOut, tokIn, tokOut, tokCache: usage?.cache_read_input_tokens ?? 0 }
 }
 
 function trailFor(tool: string, detail: string): TrailItem | undefined {
@@ -639,9 +655,12 @@ export const register: Register = on => {
           detail: e.isAborted ? 'interrompido' : 'aguardando seu pedido',
           call: '',
           since: now,
-          tokens: (a.tokens ?? 0) + used,
+          tokens: (a.tokens ?? 0) + used.tokens,
+          tokIn: (a.tokIn ?? 0) + used.tokIn,
+          tokOut: (a.tokOut ?? 0) + used.tokOut,
+          tokCache: (a.tokCache ?? 0) + used.tokCache,
         }))
-        await addToDay($, (await read($, team)).lead.name, { tasks: 1, ms: e.durationMs, tokens: used })
+        await addToDay($, (await read($, team)).lead.name, { tasks: 1, ms: e.durationMs, ...used })
       } else {
         const id = e.agentId
         const row = (await read($, agents))[id]
@@ -654,12 +673,15 @@ export const register: Register = on => {
             detail: e.isAborted ? 'interrompido' : 'entregou',
             call: '',
             since: at,
-            tokens: (a.tokens ?? 0) + used,
+            tokens: (a.tokens ?? 0) + used.tokens,
+            tokIn: (a.tokIn ?? 0) + used.tokIn,
+            tokOut: (a.tokOut ?? 0) + used.tokOut,
+            tokCache: (a.tokCache ?? 0) + used.tokCache,
           }))
           const took = fmtDuration(now - (row.taskStart ?? row.born))
-          const cost = used > 0 ? `, ${fmtTokens(used)} tokens` : ''
+          const cost = used.tokens > 0 ? `, ${fmtTokens(used.tokens)} tokens` : ''
           await note($, `${name} ${e.isAborted ? 'interrompido' : 'concluiu'} (${took}${cost}): ${clip(row.task, 50)}`)
-          await addToDay($, row.roleName, { tasks: 1, ms: now - (row.taskStart ?? row.born), tokens: used })
+          await addToDay($, row.roleName, { tasks: 1, ms: now - (row.taskStart ?? row.born), ...used })
         }
       }
     } catch {}
@@ -812,7 +834,7 @@ export const register: Register = on => {
                 <Text color={status.color}>{status.label}</Text>
                 <Text dimColor>
                   {time ? `  ${time}` : ''}
-                  {p.tokens > 0 ? `  ${fmtTokens(p.tokens)} tokens` : ''}
+                  {p.tokens > 0 ? `  ${fmtTokens(p.tokens)} tokens ${fmtTokDetail(p)}`.trimEnd() : ''}
                   {p.detail ? `  ${p.detail}` : ''}
                 </Text>
               </Text>
@@ -850,7 +872,7 @@ export const register: Register = on => {
           const status = STATUS[p.activity]
           const idle = p.activity === 'livre'
           const time = sinceText(now, p.taskStart, p.activity)
-          const facts = [time, p.tokens > 0 ? `${fmtTokens(p.tokens)} tokens` : ''].filter(Boolean).join(' · ')
+          const facts = [time, p.tokens > 0 ? `${fmtTokens(p.tokens)} tokens ${fmtTokDetail(p)}`.trimEnd() : ''].filter(Boolean).join(' · ')
           const info = [p.detail, p.task].filter(Boolean).join('  ·  ')
           const steps = trailText(p.trail)
           return (
@@ -911,7 +933,7 @@ export const register: Register = on => {
             <Text bold>Hoje neste chat</Text>
             {todayRoles.map(r => (
               <Text dimColor wrap="truncate-end">
-                {r.role}: {r.tasks} {r.tasks === 1 ? 'tarefa' : 'tarefas'} · {fmtDuration(r.ms)} · {fmtTokens(r.tokens)} tokens
+                {r.role}: {r.tasks} {r.tasks === 1 ? 'tarefa' : 'tarefas'} · {fmtDuration(r.ms)} · {`${fmtTokens(r.tokens)} tokens ${fmtTokDetail(r)}`.trimEnd()}
               </Text>
             ))}
             <Button key="copy-day" label="Copiar resumo do dia" onPress={() => copyDay($, e.surface)} />

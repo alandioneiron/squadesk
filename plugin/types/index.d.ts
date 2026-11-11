@@ -58,6 +58,12 @@ export type AgentRow = {
   parent: string
   /** Tokens gastos (entrada nova + gravação de cache + saída), somados ao fim de cada turno. Ausente em linhas antigas. */
   tokens?: number
+  /** Entrada do agente (entrada nova + gravação de cache). Ausente em linhas antigas. */
+  tokIn?: number
+  /** Saída do agente. Ausente em linhas antigas. */
+  tokOut?: number
+  /** Leitura de cache do agente (fica fora de `tokens`). Ausente em linhas antigas. */
+  tokCache?: number
   /** Início da tarefa atual (ms). Ausente em linhas antigas. */
   taskStart?: number
   /** Arquivos e comandos tocados na tarefa, mais recente por último. Ausente em linhas antigas. */
@@ -66,7 +72,18 @@ export type AgentRow = {
 
 export type LogLine = { at: number; text: string }
 
-export type DayRole = { role: string; tasks: number; ms: number; tokens: number }
+export type DayRole = {
+  role: string
+  tasks: number
+  ms: number
+  tokens: number
+  /** Entrada (nova + gravação de cache). Ausente em resumos antigos. */
+  tokIn?: number
+  /** Saída. Ausente em resumos antigos. */
+  tokOut?: number
+  /** Leitura de cache (fora de `tokens`). Ausente em resumos antigos. */
+  tokCache?: number
+}
 
 /** Resumo do dia deste chat; zera quando a data muda. */
 export type Daily = { date: string; roles: DayRole[] }

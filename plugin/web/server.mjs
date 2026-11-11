@@ -714,6 +714,8 @@ button:focus-visible,.row:focus-visible,.tile:focus-visible,a:focus-visible,inpu
 .lbl{font-size:13px}
 .agr{margin-left:auto;color:var(--tx2);font-size:12px;white-space:nowrap}
 .since:not([hidden])::after{content:" · "}
+.tkd{color:var(--tx2);opacity:.8;font-size:11px;overflow-wrap:anywhere;margin-top:1px}
+.stat .sub{display:block;font-size:11px;opacity:.8;overflow-wrap:anywhere;margin-top:2px}
 .det-l{font-family:Consolas,"Cascadia Mono",monospace;font-size:12px;overflow-wrap:anywhere;margin-top:2px}
 .tsk{color:var(--tx2);font-size:12px;overflow-wrap:anywhere;margin-top:1px}
 details.trail{margin-top:3px;font-size:12px;color:var(--tx2)}
@@ -870,6 +872,7 @@ body[data-modo=one] .wrap{max-width:1700px}
 body.fit .stats{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
 body.fit .stat{display:flex;align-items:baseline;gap:8px;padding:4px 12px;border-radius:10px}
 body.fit .stat b{font-size:18px;display:inline}
+body.fit .stat .sub{display:none}
 body.fit .note{display:none}
 @media (min-width:800px){
   body.fit{height:100vh;height:100dvh;overflow:hidden}
@@ -909,7 +912,7 @@ body.fit .note{display:none}
     <div class="stat"><b id="s-chats">–</b><span>chats ativos</span></div>
     <div class="stat"><b id="s-busy">–</b><span>agentes trabalhando</span></div>
     <div class="stat" id="s-wait-box"><b id="s-wait">–</b><span>aguardando aprovação</span></div>
-    <div class="stat"><b id="s-tok">–</b><span>tokens hoje</span></div>
+    <div class="stat"><b id="s-tok">–</b><span>tokens hoje</span><span class="sub" id="s-tok-d" hidden></span></div>
   </section>
   <div class="empty" id="empty" hidden></div>
   <main id="main">
@@ -983,10 +986,11 @@ body.fit .note{display:none}
     <div class="empty" id="daily-empty" hidden>Sem atividade registrada hoje.</div>
     <div class="tbl" id="daily-tbl" hidden>
       <table>
-        <thead><tr><th>Papel</th><th>Tarefas</th><th>Tempo</th><th>Tokens</th></tr></thead>
+        <thead><tr><th>Papel</th><th>Tarefas</th><th>Tempo</th><th>Tokens</th><th>Entrada</th><th>Saída</th><th>Cache lido</th></tr></thead>
         <tbody id="daily-body"></tbody>
-        <tfoot><tr><td>Total</td><td id="t-tasks"></td><td id="t-ms"></td><td id="t-tok"></td></tr></tfoot>
+        <tfoot><tr><td>Total</td><td id="t-tasks"></td><td id="t-ms"></td><td id="t-tok"></td><td id="t-in"></td><td id="t-out"></td><td id="t-cache"></td></tr></tfoot>
       </table>
+      <p class="note" id="daily-note">Tokens = entrada + saída; o cache lido fica à parte e não entra no total.</p>
     </div>
   </section>
   <p class="note">Atualiza sozinho a cada 2 segundos</p>
@@ -1077,6 +1081,14 @@ body.fit .note{display:none}
     if (n < 1000) return n + (n === 1 ? ' token' : ' tokens');
     if (n < 1e6) return (n < 100000 ? nf1 : nf0).format(n / 1000) + ' mil tokens';
     return nf2.format(n / 1e6) + ' mi tokens';
+  }
+  // Detalhe dos tokens: "entrada 480 mil · saída 35 mil · cache lido 12 mi". Vazio se não houver os campos (retratos antigos).
+  function tokDetail(o) {
+    var i = Math.round(num(o && o.tokIn)), t = Math.round(num(o && o.tokOut)), c = Math.round(num(o && o.tokCache));
+    if (i + t <= 0) return '';
+    var parts = ['entrada ' + fmtShort(i), 'saída ' + fmtShort(t)];
+    if (c > 0) parts.push('cache lido ' + fmtShort(c));
+    return parts.join(' · ');
   }
   function fmtHour(ms) { return dfHour.format(new Date(num(ms))); }
 
@@ -1188,13 +1200,14 @@ body.fit .note{display:none}
     g.since = el('span', 'since'); g.tk = el('span', 'tk');
     right.appendChild(g.since); right.appendChild(g.tk);
     top.appendChild(g.t); top.appendChild(g.m); top.appendChild(g.l); top.appendChild(right);
+    g.tkd = el('div', 'tkd');
     g.det = el('div', 'det-l');
     g.tsk = el('div', 'tsk');
     g.trail = el('details', 'trail');
     g.trailSum = el('summary');
     g.trailList = el('ul');
     g.trail.appendChild(g.trailSum); g.trail.appendChild(g.trailList);
-    body.appendChild(top); body.appendChild(g.det); body.appendChild(g.tsk); body.appendChild(g.trail);
+    body.appendChild(top); body.appendChild(g.tkd); body.appendChild(g.det); body.appendChild(g.tsk); body.appendChild(g.trail);
     g.li.appendChild(g.dot); g.li.appendChild(body);
     return g;
   }
@@ -1214,6 +1227,8 @@ body.fit .note{display:none}
     g.since.dataset.t = String(st);
     g.since.hidden = !(st > 0);
     setText(g.tk, fmtTokens(a.tokens));
+    var tkd = noTrail ? '' : tokDetail(a); // só no painel do chat; a TV fica com o total
+    setText(g.tkd, tkd); g.tkd.hidden = !tkd;
     var det = str(a.detail), tsk = str(a.task);
     setText(g.det, det); g.det.hidden = !det;
     setText(g.tsk, tsk); g.tsk.hidden = !tsk;
@@ -1276,6 +1291,8 @@ body.fit .note{display:none}
     d.age = el('span', 'age');
     d.tokens = el('span', 'tk');
     meta.appendChild(d.age); meta.appendChild(document.createTextNode(' · ')); meta.appendChild(d.tokens);
+    d.tokDet = el('span', 'tkdet');
+    meta.appendChild(d.tokDet);
     d.art.img = el('img', 'art');
     d.art.img.alt = 'Desenho da sala';
     d.art.img.hidden = true;
@@ -1312,6 +1329,8 @@ body.fit .note{display:none}
     d.root.classList.toggle('attn', st.waiting > 0);
     d.age.dataset.at = String(num(s.updatedAt));
     setText(d.tokens, fmtTokens(s.tokens));
+    var sd = tokDetail(s);
+    setText(d.tokDet, sd ? ' (' + sd + ')' : '');
     d.mesas.hidden = !canEdit;
     setArt(d.art, str(s.svg));
     syncAgents(d.ags, d.agList, agentsOf(s), false);
@@ -1675,26 +1694,36 @@ body.fit .note{display:none}
         if (!isObj(r)) return;
         var k = str(r.role) || '?';
         var o = map.get(k);
-        if (!o) { o = { role: k, tasks: 0, ms: 0, tokens: 0 }; map.set(k, o); }
+        if (!o) { o = { role: k, tasks: 0, ms: 0, tokens: 0, tokIn: 0, tokOut: 0, tokCache: 0 }; map.set(k, o); }
         o.tasks += num(r.tasks); o.ms += num(r.ms); o.tokens += num(r.tokens);
+        o.tokIn += num(r.tokIn); o.tokOut += num(r.tokOut); o.tokCache += num(r.tokCache);
       });
     });
     var rws = Array.from(map.values()).sort(function (a, b) { return b.tokens - a.tokens; });
-    var tot = rws.reduce(function (t, r) { t.tasks += r.tasks; t.ms += r.ms; t.tokens += r.tokens; return t; }, { tasks: 0, ms: 0, tokens: 0 });
+    var tot = rws.reduce(function (t, r) { t.tasks += r.tasks; t.ms += r.ms; t.tokens += r.tokens; t.tokIn += r.tokIn; t.tokOut += r.tokOut; t.tokCache += r.tokCache; return t; }, { tasks: 0, ms: 0, tokens: 0, tokIn: 0, tokOut: 0, tokCache: 0 });
     var sig = JSON.stringify([today, rws]);
     if (sig !== dailySig) {
       dailySig = sig;
       var body = $('#daily-body');
       while (body.firstChild) body.removeChild(body.firstChild);
+      // Resumos gravados antes da 0.7.0 não têm a divisão: "–" em vez de um zero que parece gasto nulo.
+      var splitCells = function (o) {
+        return o.tokIn + o.tokOut > 0 ? [fmtShort(o.tokIn), fmtShort(o.tokOut), fmtShort(o.tokCache)] : ['–', '–', '–'];
+      };
       rws.forEach(function (r) {
         var tr = el('tr');
         tr.appendChild(el('td', null, r.role));
         tr.appendChild(el('td', null, String(r.tasks)));
         tr.appendChild(el('td', null, fmtDur(r.ms)));
         tr.appendChild(el('td', null, fmtTokens(r.tokens)));
+        splitCells(r).forEach(function (v) { tr.appendChild(el('td', null, v)); });
         body.appendChild(tr);
       });
       setText($('#t-tasks'), tot.tasks); setText($('#t-ms'), fmtDur(tot.ms)); setText($('#t-tok'), fmtTokens(tot.tokens));
+      var tc = splitCells(tot);
+      setText($('#t-in'), tc[0]); setText($('#t-out'), tc[1]); setText($('#t-cache'), tc[2]);
+      var dd = tokDetail(tot), sdEl = $('#s-tok-d');
+      setText(sdEl, dd); sdEl.hidden = !dd;
       $('#daily-tbl').hidden = rws.length === 0;
       $('#daily-empty').hidden = rws.length !== 0;
     }

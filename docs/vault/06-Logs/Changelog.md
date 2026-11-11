@@ -6,6 +6,14 @@ tags: [log, changelog]
 Segue SemVer. As notas de release saem daqui. As versões anteriores a 0.6.0 foram reconstruídas a partir do histórico do projeto.
 
 ## Não lançado
+- (nada)
+
+## 0.7.0 - 2026-11-11
+- Tokens separados em entrada, saída e cache lido (ADR-0007):
+  - na sala do chat: nas linhas de agente e no resumo do dia;
+  - no painel web: no cartão "tokens hoje", no cabeçalho da sala, nos agentes e na tabela do dia.
+
+  O total continua com a mesma regra. Retratos novos trazem `tokIn`, `tokOut` e `tokCache`. Resumos antigos mostram "–" nas colunas novas.
 - Processo: método tech-lead-vault adotado (`CLAUDE.md`, vault em `docs/vault`, modelos de issue e PR, CI em Node). Não muda o plugin.
 
 ## 0.6.1 - 2026-10-08

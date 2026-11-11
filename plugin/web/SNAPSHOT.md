@@ -29,7 +29,10 @@ type Snapshot = {
   svg: string             // desenho da sala, SVG completo (viewBox 760 x altura variável)
   busy: number            // agentes trabalhando agora
   waiting: number         // agentes aguardando aprovação do usuário
-  tokens: number          // tokens do chat até agora (soma dos agentes)
+  tokens: number          // tokens do chat até agora (soma dos agentes) = entrada nova + gravação de cache + saída
+  tokIn: number           // entrada nova + gravação de cache (parte de `tokens`). Ausente em retratos antigos (plugin 0.6.x): a página trata como 0
+  tokOut: number          // saída (parte de `tokens`). Idem
+  tokCache: number        // leitura de cache; NÃO entra em `tokens`. Idem
   agents: {
     key: string           // id estável da linha
     title: string         // "Tech Lead", "Dev Backend 2", "QA Android"
@@ -41,11 +44,14 @@ type Snapshot = {
     task: string          // a tarefa recebida ('' no Tech Lead: o texto do pedido do usuário não sai do PC)
     taskStart: number     // ms epoch do início da tarefa atual; 0 = sem tarefa
     tokens: number        // tokens deste agente (atualiza ao fim de cada turno dele)
+    tokIn: number         // entrada nova + gravação de cache deste agente (opcional: retratos antigos não têm)
+    tokOut: number        // saída deste agente (opcional)
+    tokCache: number      // leitura de cache deste agente; fora de `tokens` (opcional)
     temp: boolean         // papel temporário (não está no arquivo da equipe)
     trail: { op: string; what: string }[]  // histórico: op = leu|editou|rodou|buscou|abriu; mais recente por último
   }[]
   log: { at: number; text: string }[]   // últimos eventos, mais recente por último (sem o texto dos pedidos)
-  daily: { date: string; roles: { role: string; tasks: number; ms: number; tokens: number }[] }  // resumo do dia deste chat; date = YYYY-MM-DD (dia gravado pelo plugin); a página compara com o "hoje" no fuso do navegador
+  daily: { date: string; roles: { role: string; tasks: number; ms: number; tokens: number; tokIn?: number; tokOut?: number; tokCache?: number }[] }  // tokIn/tokOut/tokCache: mesma divisão de `tokens`; ausentes em retratos antigos; resumo do dia deste chat; date = YYYY-MM-DD (dia gravado pelo plugin); a página compara com o "hoje" no fuso do navegador
 }
 ```
 

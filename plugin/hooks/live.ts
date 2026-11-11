@@ -24,6 +24,9 @@ export type Snapshot = {
   busy: number
   waiting: number
   tokens: number
+  tokIn: number
+  tokOut: number
+  tokCache: number
   agents: {
     key: string
     title: string
@@ -35,6 +38,9 @@ export type Snapshot = {
     task: string
     taskStart: number
     tokens: number
+    tokIn: number
+    tokOut: number
+    tokCache: number
     temp: boolean
     trail: TrailItem[]
   }[]
@@ -52,17 +58,33 @@ export function today(ms: number, zone: string = localZone()): string {
 }
 
 /** Soma uma tarefa (ou um turno do líder) ao resumo do dia; zera quando a data muda. */
-export function addDay(daily: Daily, now: number, role: string, add: { tasks: number; ms: number; tokens: number }): Daily {
+export function addDay(
+  daily: Daily,
+  now: number,
+  role: string,
+  add: { tasks: number; ms: number; tokens: number; tokIn?: number; tokOut?: number; tokCache?: number },
+): Daily {
   const date = today(now)
   const roles = daily.date === date ? daily.roles : []
   const found = roles.some(r => r.role === role)
+  const base = { tasks: add.tasks, ms: add.ms, tokens: add.tokens, tokIn: add.tokIn ?? 0, tokOut: add.tokOut ?? 0, tokCache: add.tokCache ?? 0 }
   return {
     date,
     roles: found
       ? roles.map(r =>
-          r.role === role ? { ...r, tasks: r.tasks + add.tasks, ms: r.ms + add.ms, tokens: r.tokens + add.tokens } : r,
+          r.role === role
+            ? {
+                ...r,
+                tasks: r.tasks + base.tasks,
+                ms: r.ms + base.ms,
+                tokens: r.tokens + base.tokens,
+                tokIn: (r.tokIn ?? 0) + base.tokIn,
+                tokOut: (r.tokOut ?? 0) + base.tokOut,
+                tokCache: (r.tokCache ?? 0) + base.tokCache,
+              }
+            : r,
         )
-      : [...roles, { role, ...add }],
+      : [...roles, { role, ...base }],
   }
 }
 
@@ -70,20 +92,32 @@ export function addDay(daily: Daily, now: number, role: string, add: { tasks: nu
 export function dayText(daily: Daily, project: string): string {
   const [y, m, d] = daily.date.split('-')
   const rows = [...daily.roles].sort((a, b) => b.tokens - a.tokens)
-  const total = rows.reduce((t, r) => ({ tasks: t.tasks + r.tasks, ms: t.ms + r.ms, tokens: t.tokens + r.tokens }), {
-    tasks: 0,
-    ms: 0,
-    tokens: 0,
-  })
+  const total = rows.reduce(
+    (t, r) => ({
+      tasks: t.tasks + r.tasks,
+      ms: t.ms + r.ms,
+      tokens: t.tokens + r.tokens,
+      tokIn: t.tokIn + (r.tokIn ?? 0),
+      tokOut: t.tokOut + (r.tokOut ?? 0),
+      tokCache: t.tokCache + (r.tokCache ?? 0),
+    }),
+    { tasks: 0, ms: 0, tokens: 0, tokIn: 0, tokOut: 0, tokCache: 0 },
+  )
+  // Resumos gravados antes da 0.7.0 não têm a divisão: "–" em vez de um zero que parece gasto nulo.
+  const split = (t: { tokIn?: number; tokOut?: number; tokCache?: number }) =>
+    (t.tokIn ?? 0) + (t.tokOut ?? 0) > 0 ? [t.tokIn ?? 0, t.tokOut ?? 0, t.tokCache ?? 0].map(fmtTokens) : ['–', '–', '–']
   return [
     `### Sala dos Agentes — ${d}/${m}/${y} — ${project}`,
     '',
-    '| Papel | Tarefas | Tempo | Tokens |',
-    '|---|---:|---:|---:|',
-    ...rows.map(r => `| ${r.role} | ${r.tasks} | ${fmtDuration(r.ms)} | ${fmtTokens(r.tokens)} |`),
-    `| **Total** | **${total.tasks}** | **${fmtDuration(total.ms)}** | **${fmtTokens(total.tokens)}** |`,
+    '| Papel | Tarefas | Tempo | Tokens | Entrada | Saída | Cache lido |',
+    '|---|---:|---:|---:|---:|---:|---:|',
+    ...rows.map(
+      r =>
+        `| ${r.role} | ${r.tasks} | ${fmtDuration(r.ms)} | ${fmtTokens(r.tokens)} | ${split(r).join(' | ')} |`,
+    ),
+    `| **Total** | **${total.tasks}** | **${fmtDuration(total.ms)}** | **${fmtTokens(total.tokens)}** | ${split(total).map(v => `**${v}**`).join(' | ')} |`,
     '',
-    '_Tokens sem contar leitura de cache. Tarefas do líder = pedidos atendidos._',
+    '_Tokens = entrada (nova + gravação de cache) + saída. A leitura de cache aparece à parte: custa ~10% e não entra no total. Tarefas do líder = pedidos atendidos._',
   ].join('\n')
 }
 
@@ -118,6 +152,9 @@ export function buildSnapshot(input: {
     task: l.key === LEAD ? '' : l.task,
     taskStart: l.taskStart,
     tokens: l.tokens,
+    tokIn: l.tokIn,
+    tokOut: l.tokOut,
+    tokCache: l.tokCache,
     temp: l.temp,
     trail: l.trail.slice(-30),
   }))
@@ -141,9 +178,23 @@ export function buildSnapshot(input: {
     busy: agents.filter(a => busyActivity(a.activity)).length,
     waiting: agents.filter(a => a.activity === 'aprovacao').length,
     tokens: agents.reduce((sum, a) => sum + a.tokens, 0),
+    tokIn: agents.reduce((sum, a) => sum + a.tokIn, 0),
+    tokOut: agents.reduce((sum, a) => sum + a.tokOut, 0),
+    tokCache: agents.reduce((sum, a) => sum + a.tokCache, 0),
     agents,
     log: input.log.filter(l => !l.text.startsWith('pedido:')).slice(-20),
-    daily: input.daily.date === today(input.now) ? input.daily : { date: today(input.now), roles: [] },
+    daily:
+      input.daily.date === today(input.now)
+        ? {
+            date: input.daily.date,
+            roles: input.daily.roles.map(r => ({
+              ...r,
+              tokIn: r.tokIn ?? 0,
+              tokOut: r.tokOut ?? 0,
+              tokCache: r.tokCache ?? 0,
+            })),
+          }
+        : { date: today(input.now), roles: [] },
   }
 }
 
