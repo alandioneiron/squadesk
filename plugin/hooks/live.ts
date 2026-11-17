@@ -1,5 +1,5 @@
 import type { AgentRow, Daily, LogLine, OtherChat, Team, TrailItem } from '../types'
-import { fmtDuration, fmtTokens, localZone, renderSvg, roster, STATUS } from './room'
+import { fmtByModel, fmtDuration, fmtTokens, localZone, renderSvg, roster, STATUS } from './room'
 import { LEAD } from './team'
 
 // O retrato de um chat que o painel web e os outros chats leem (contrato em web/SNAPSHOT.md).
@@ -27,6 +27,7 @@ export type Snapshot = {
   tokIn: number
   tokOut: number
   tokCache: number
+  byModel?: Record<string, number>
   agents: {
     key: string
     title: string
@@ -41,6 +42,7 @@ export type Snapshot = {
     tokIn: number
     tokOut: number
     tokCache: number
+    byModel?: Record<string, number>
     temp: boolean
     trail: TrailItem[]
   }[]
@@ -57,12 +59,22 @@ export function today(ms: number, zone: string = localZone()): string {
   }
 }
 
+function sumByModel(a?: Record<string, number>, b?: Record<string, number>): Record<string, number> | undefined {
+  const out: Record<string, number> = { ...(a ?? {}) }
+  for (const [model, n] of Object.entries(b ?? {})) if (n > 0) out[model] = (out[model] ?? 0) + n
+  return Object.keys(out).length > 0 ? out : undefined
+}
+
+function optional(by?: Record<string, number>): { byModel?: Record<string, number> } {
+  return by ? { byModel: by } : {}
+}
+
 /** Soma uma tarefa (ou um turno do líder) ao resumo do dia; zera quando a data muda. */
 export function addDay(
   daily: Daily,
   now: number,
   role: string,
-  add: { tasks: number; ms: number; tokens: number; tokIn?: number; tokOut?: number; tokCache?: number },
+  add: { tasks: number; ms: number; tokens: number; tokIn?: number; tokOut?: number; tokCache?: number; byModel?: Record<string, number> },
 ): Daily {
   const date = today(now)
   const roles = daily.date === date ? daily.roles : []
@@ -81,10 +93,11 @@ export function addDay(
                 tokIn: (r.tokIn ?? 0) + base.tokIn,
                 tokOut: (r.tokOut ?? 0) + base.tokOut,
                 tokCache: (r.tokCache ?? 0) + base.tokCache,
+                ...optional(sumByModel(r.byModel, add.byModel)),
               }
             : r,
         )
-      : [...roles, { role, ...base }],
+      : [...roles, { role, ...base, ...optional(sumByModel(undefined, add.byModel)) }],
   }
 }
 
@@ -103,19 +116,25 @@ export function dayText(daily: Daily, project: string): string {
     }),
     { tasks: 0, ms: 0, tokens: 0, tokIn: 0, tokOut: 0, tokCache: 0 },
   )
+  const totalBy = rows.reduce<Record<string, number> | undefined>((t, r) => sumByModel(t, r.byModel), undefined)
+  // Um modelo: o nome; 2 ou mais: tokens por modelo; sem dado (dias antigos): "–".
+  const models = (by?: Record<string, number>) => {
+    const names = Object.entries(by ?? {}).filter(([, n]) => n > 0).map(([m]) => m)
+    return names.length === 0 ? '–' : names.length === 1 ? (names[0] ?? '–') : fmtByModel(by)
+  }
   // Resumos gravados antes da 0.7.0 não têm a divisão: "–" em vez de um zero que parece gasto nulo.
   const split = (t: { tokIn?: number; tokOut?: number; tokCache?: number }) =>
     (t.tokIn ?? 0) + (t.tokOut ?? 0) > 0 ? [t.tokIn ?? 0, t.tokOut ?? 0, t.tokCache ?? 0].map(fmtTokens) : ['–', '–', '–']
   return [
     `### Sala dos Agentes — ${d}/${m}/${y} — ${project}`,
     '',
-    '| Papel | Tarefas | Tempo | Tokens | Entrada | Saída | Cache lido |',
-    '|---|---:|---:|---:|---:|---:|---:|',
+    '| Papel | Tarefas | Tempo | Tokens | Entrada | Saída | Cache lido | Modelos |',
+    '|---|---:|---:|---:|---:|---:|---:|---|',
     ...rows.map(
       r =>
-        `| ${r.role} | ${r.tasks} | ${fmtDuration(r.ms)} | ${fmtTokens(r.tokens)} | ${split(r).join(' | ')} |`,
+        `| ${r.role} | ${r.tasks} | ${fmtDuration(r.ms)} | ${fmtTokens(r.tokens)} | ${split(r).join(' | ')} | ${models(r.byModel)} |`,
     ),
-    `| **Total** | **${total.tasks}** | **${fmtDuration(total.ms)}** | **${fmtTokens(total.tokens)}** | ${split(total).map(v => `**${v}**`).join(' | ')} |`,
+    `| **Total** | **${total.tasks}** | **${fmtDuration(total.ms)}** | **${fmtTokens(total.tokens)}** | ${split(total).map(v => `**${v}**`).join(' | ')} | ${models(totalBy)} |`,
     '',
     '_Tokens = entrada (nova + gravação de cache) + saída. A leitura de cache aparece à parte: custa ~10% e não entra no total. Tarefas do líder = pedidos atendidos._',
   ].join('\n')
@@ -155,6 +174,7 @@ export function buildSnapshot(input: {
     tokIn: l.tokIn,
     tokOut: l.tokOut,
     tokCache: l.tokCache,
+    ...optional(sumByModel(undefined, l.byModel)),
     temp: l.temp,
     trail: l.trail.slice(-30),
   }))
@@ -181,6 +201,7 @@ export function buildSnapshot(input: {
     tokIn: agents.reduce((sum, a) => sum + a.tokIn, 0),
     tokOut: agents.reduce((sum, a) => sum + a.tokOut, 0),
     tokCache: agents.reduce((sum, a) => sum + a.tokCache, 0),
+    ...optional(agents.reduce<Record<string, number> | undefined>((t, a) => sumByModel(t, a.byModel), undefined)),
     agents,
     log: input.log.filter(l => !l.text.startsWith('pedido:')).slice(-20),
     daily:

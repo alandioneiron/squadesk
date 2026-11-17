@@ -4,8 +4,8 @@
  "title": "Tela de extrato",
  "project": "app-financeiro",
  "cwd": "C:\\projetos\\app-financeiro",
- "startedAt": 1794430205415,
- "updatedAt": 1794432905415,
+ "startedAt": 1794927359545,
+ "updatedAt": 1794930059545,
  "ended": false,
  "version": "exemplo",
  "team": {
@@ -126,13 +126,16 @@
    "color": "#C9A24B",
    "detail": "→ filtro por período",
    "task": "",
-   "taskStart": 1794433205415,
+   "taskStart": 1794930359545,
    "tokens": 150000,
    "tokIn": 138000,
    "tokOut": 12000,
    "tokCache": 1500000,
    "temp": false,
-   "trail": []
+   "trail": [],
+   "byModel": {
+    "Opus": 150000
+   }
   },
   {
    "key": "qa",
@@ -194,7 +197,7 @@
    "color": "#D9CFBF",
    "detail": "",
    "task": "Filtrar o extrato por período",
-   "taskStart": 1794433745415,
+   "taskStart": 1794930899545,
    "tokens": 0,
    "tokIn": 0,
    "tokOut": 0,
@@ -231,12 +234,12 @@
  ],
  "log": [
   {
-   "at": 1794433715415,
+   "at": 1794930869545,
    "text": "Tech Lead → Dev Frontend (Sonnet): Filtro de período do extrato"
   }
  ],
  "daily": {
-  "date": "2026-11-11",
+  "date": "2026-11-17",
   "roles": [
    {
     "role": "Tech Lead",
@@ -245,7 +248,10 @@
     "tokens": 180000,
     "tokIn": 165600,
     "tokOut": 14400,
-    "tokCache": 1800000
+    "tokCache": 1800000,
+    "byModel": {
+     "Opus": 180000
+    }
    },
    {
     "role": "Dev Backend",
@@ -254,8 +260,14 @@
     "tokens": 95000,
     "tokIn": 87400,
     "tokOut": 7600,
-    "tokCache": 950000
+    "tokCache": 950000,
+    "byModel": {
+     "Sonnet": 95000
+    }
    }
   ]
+ },
+ "byModel": {
+  "Opus": 150000
  }
 }

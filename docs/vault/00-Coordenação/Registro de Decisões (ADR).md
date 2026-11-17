@@ -7,7 +7,7 @@ Toda decisão de arquitetura ou tecnologia ganha uma entrada. Crie o ADR a parti
 
 As decisões 0002 a 0006 foram tomadas antes de o vault existir. Elas foram registradas aqui em 2026-11-03, com a data em que passaram a valer.
 
-Próximo número: **ADR-0008**
+Próximo número: **ADR-0009**
 
 | ADR | Data | Decisão | Status |
 |---|---|---|---|
@@ -18,6 +18,7 @@ Próximo número: **ADR-0008**
 | ADR-0005 | 2026-10-08 | Repositório público limpo: sem dados pessoais, prints do QA fora do git | Aceito |
 | ADR-0006 | 2026-10-08 | Painel web com chave por porta e edição de mesas só pelo próprio PC | Aceito |
 | ADR-0007 | 2026-11-11 | Tokens separados em campos novos; o total e a sua regra não mudam | Aceito |
+| ADR-0008 | 2026-11-17 | A mesa mostra o modelo em uso, lido do motor a cada passo; sem mesa a mais para o modelo forte | Aceito |
 
 ## ADR-0001 - Adotar o método tech-lead-vault
 - **Data:** 2026-11-03
@@ -98,3 +99,23 @@ Próximo número: **ADR-0008**
   - somar o cache lido no total: o número inflaria sem refletir o custo, que é cerca de 10% do normal;
   - trocar `tokens` por um objeto: quebraria painéis e retratos 0.6.x.
 - **Consequências:** retratos antigos não têm os campos, e o painel trata a falta como zero, sem detalhe. Chats abertos antes da 0.7.0 só separam os turnos novos. Contrato em `plugin/web/SNAPSHOT.md`.
+
+## ADR-0008 - A mesa mostra o modelo em uso
+- **Data:** 2026-11-17
+- **Status:** Aceito
+- **Contexto:** o dono perguntou se a skill tinha o `/model opusplan` (Opus no plano, Sonnet na execução) e se valia uma mesa a mais para mostrar quando o modelo forte está em uso. A mesa do Tech Lead mostrava o modelo fixo do arquivo da equipe (`lider.modelo`): dizia "Opus" mesmo com o Sonnet executando, ou com o chat trocado para Fable.
+- **Decisão:**
+  - **Sem mesa a mais.** Uma mesa é um agente, com contexto e tarefa próprios. No `opusplan` é o mesmo agente e a mesma conversa, só com outro modelo. Uma segunda mesa daria a impressão de uma delegação que não houve e dividiria os tokens de um agente só.
+  - **O modelo vem do motor.** A cada passo, o `turn.step` informa o modelo resolvido para aquele pedido. A mesa do Tech Lead e a dos subagentes mostram esse modelo. O `lider.modelo` do arquivo vira só o valor até a primeira resposta. No começo do chat e de cada turno, o `$.session.model()` adianta o valor; com `opusplan`, quem decide é o passo.
+  - **Tokens por modelo.** Os tokens de cada passo (`usage` do `TurnStepResult`) vão para um campo novo, `byModel`, no agente, no chat e no resumo do dia. O total e a sua regra não mudam (ADR-0007).
+  - O guia não fixa mais "Tech Lead (Opus)": usa o modelo em uso.
+- **Alternativas:**
+  - uma mesa "Tech Lead (Opus)" e outra "Tech Lead (Sonnet)": recusada pelos motivos acima;
+  - ler o modelo só no `turn.complete`: o `usage.model` é o do último pedido do turno, e a mesa só mudaria no fim da resposta;
+  - para o modelo forte de verdade como outro agente, já existe o caminho de uma mesa como "Arquiteto (Opus)": recebe só o resumo da tarefa e costuma sair mais barato que o `opusplan` em conversa longa.
+- **Consequências:**
+  - o `turn.step` fica no caminho de toda resposta: o hook só lê, repassa o fluxo sem mexer e protege o próprio código com try/catch;
+  - retratos 0.7.x não têm `byModel`, e o painel mostra "–";
+  - chats abertos antes da 0.8.0 só dividem por modelo os turnos novos.
+
+  Contrato em `plugin/web/SNAPSHOT.md`.

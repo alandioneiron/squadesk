@@ -23,6 +23,19 @@ export function shortModel(model: unknown): string {
   return ''
 }
 
+/**
+ * O modelo que o chat usa de fato (id ou alias): '' quando não dá para dizer (vazio, alias que se
+ * decide a cada passo como `opusplan`, ou algo que não é id de modelo). Id novo vira o nome da família.
+ */
+export function liveModel(raw: unknown): string {
+  if (typeof raw !== 'string' || !raw.trim()) return ''
+  if (/plan/i.test(raw)) return ''
+  const known = shortModel(raw)
+  if (known) return known
+  const family = /^claude-([a-z]+)/i.exec(raw.trim())?.[1]
+  return family ? family.charAt(0).toUpperCase() + family.slice(1).toLowerCase() : ''
+}
+
 function escape(text: string): string {
   return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }

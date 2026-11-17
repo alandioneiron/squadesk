@@ -9,6 +9,7 @@ import {
   emptyLead,
   fmtDuration,
   fmtTime,
+  fmtByModel,
   fmtTokDetail,
   fmtTokens,
   renderSvg,
@@ -26,6 +27,7 @@ import {
   exampleFile,
   formatTeamFile,
   LEAD,
+  liveModel,
   loadByRole,
   parseTeam,
   pickRole,
@@ -78,6 +80,9 @@ const calls = new Map<string, { agent: string; tool: string; detail: string }>()
 const awaiting = new Map<string, boolean>()
 // Chamadas cuja linha passou de parada para rodando: o diálogo foi respondido.
 const approved = new Set<string>()
+// Tokens de cada passo do turno, por modelo, até o turn.complete somar tudo à linha (no máximo STEPS_MAX turnos).
+const stepTokens = new Map<string, Record<string, number>>()
+const STEPS_MAX = 50
 
 function baseName(path: string): string {
   const parts = path.split(/[\\/]/).filter(Boolean)
@@ -212,7 +217,8 @@ async function announceTeam($: $, t: Team, diff: TeamDiff) {
   if (diff.added.length > 0) parts.push(`Entrou: ${diff.added.map(roleLabel).join(', ')}.`)
   if (diff.removed.length > 0) parts.push(`Saiu: ${diff.removed.map(r => r.name).join(', ')}.`)
   if (diff.changed.length > 0) parts.push(`Trocou de modelo: ${diff.changed.map(roleLabel).join(', ')}.`)
-  const roster = [`${t.lead.name} (${t.lead.model}, você)`, ...t.roles.map(roleLabel)].join('; ')
+  const inUse = (await read($, agents))[LEAD]?.model || t.lead.model
+  const roster = [`${t.lead.name} (${inUse}, você)`, ...t.roles.map(roleLabel)].join('; ')
   const text = [
     `[Sala dos Agentes] A equipe deste projeto mudou${t.source === 'padrão' ? '' : ` (${t.source})`}. ${parts.join(' ')}`,
     `Formação atual: ${roster}.`,
@@ -262,6 +268,32 @@ async function patch($: $, id: string, fn: (a: AgentRow, now: number) => AgentRo
   dirty = true
 }
 
+// O modelo que o chat usa agora (como o /model mostra); '' quando não dá para dizer (opusplan, default).
+async function sessionModel($: $): Promise<string> {
+  try {
+    return liveModel(await $.session.model())
+  } catch {
+    return ''
+  }
+}
+
+// O modelo do chat como o /model mostra (pode ser um alias como opusplan), para o guia.
+async function rawModel($: $): Promise<string> {
+  try {
+    return await $.session.model()
+  } catch {
+    return ''
+  }
+}
+
+// Grava o modelo em uso na linha (a do Tech Lead, ou a do subagente se ela existir), só quando mudou.
+async function setModel($: $, id: string, model: string) {
+  if (!model) return
+  const row = (await read($, agents))[id]
+  if (!row || row.model === model) return
+  await patch($, id, a => ({ ...a, model }))
+}
+
 async function note($: $, text: string) {
   const at = await $.clock.now()
   await update($, log, (l: LogLine[]) => [...l, { at, text }].slice(-40))
@@ -271,7 +303,7 @@ async function note($: $, text: string) {
 async function addToDay(
   $: $,
   role: string,
-  add: { tasks: number; ms: number; tokens: number; tokIn: number; tokOut: number; tokCache: number },
+  add: { tasks: number; ms: number; tokens: number; tokIn: number; tokOut: number; tokCache: number; byModel?: Record<string, number> },
 ) {
   const now = await $.clock.now()
   await update($, daily, (d: Daily) => addDay(d, now, role, add))
@@ -296,6 +328,12 @@ function spent(
   const tokIn = (usage?.input_tokens ?? 0) + (usage?.cache_creation_input_tokens ?? 0)
   const tokOut = usage?.output_tokens ?? 0
   return { tokens: tokIn + tokOut, tokIn, tokOut, tokCache: usage?.cache_read_input_tokens ?? 0 }
+}
+
+function mergeBy(a: Record<string, number> | undefined, b: Record<string, number>): Record<string, number> {
+  const out = { ...(a ?? {}) }
+  for (const [model, n] of Object.entries(b)) if (n > 0) out[model] = (out[model] ?? 0) + n
+  return out
 }
 
 function trailFor(tool: string, detail: string): TrailItem | undefined {
@@ -367,7 +405,8 @@ async function sweep($: $) {
 }
 
 async function reset($: $) {
-  await update($, agents, () => ({ [LEAD]: emptyLead() }))
+  const model = await sessionModel($)
+  await update($, agents, () => ({ [LEAD]: { ...emptyLead(), model } }))
   await update($, log, () => [])
   dirty = true
 }
@@ -510,6 +549,9 @@ export const register: Register = on => {
     dirty = true
     await readVersion($)
     await refreshTeam($)
+    try {
+      await setModel($, LEAD, await sessionModel($))
+    } catch {}
     await $.command.register({
       name: 'sala',
       description: 'Abre a Sala dos Agentes; "/sala mesas" lista e edita as mesas, "/sala guia", "/sala resumo", "/sala painel"',
@@ -544,7 +586,7 @@ export const register: Register = on => {
     try {
       await note($, `guia da sala entregue ao ${t.lead.name} (${t.roles.length} mesas)`)
     } catch {}
-    return { ...result, blocks: [...blocks, { name: GUIDE_BLOCK, text: guideText(t) }] }
+    return { ...result, blocks: [...blocks, { name: GUIDE_BLOCK, text: guideText(t, await rawModel($)) }] }
   }).catch(($, e, next) => next(e))
 
   // Fim de um turno do chat: o Stop traz o caminho exato do histórico; o título pode ter mudado.
@@ -589,7 +631,7 @@ export const register: Register = on => {
     if (arg === 'guia') {
       const t = await findTeam($)
       if (!t.guide) return { text: 'O guia da sala está desligado neste projeto ("orientar": false no arquivo da equipe).' }
-      return { text: `Guia que o Tech Lead recebe no começo de cada conversa:\n\n${guideText(t)}` }
+      return { text: `Guia que o Tech Lead recebe no começo de cada conversa:\n\n${guideText(t, await rawModel($))}` }
     }
     if (arg === 'resumo') {
       const d = await read($, daily)
@@ -625,22 +667,52 @@ export const register: Register = on => {
   // Pedido novo do usuário: relê a equipe e o líder começa a pensar.
   on('turn.start', async ($, e, next) => {
     try {
-      await refreshTeam($)
-      const text = e.text.trim()
-      await patch($, LEAD, (a, now) => ({
-        ...a,
-        activity: 'pensando',
-        detail: '',
-        task: text ? clip(text, 80) : a.task,
-        call: '',
-        since: now,
-        taskStart: now,
-        trail: [],
-      }))
-      if (text) await note($, `pedido: ${clip(text, 70)}`)
+      // Também dispara para subagentes: só o loop principal mexe no Tech Lead.
+      if (!e.agentId) {
+        await refreshTeam($)
+        await setModel($, LEAD, await sessionModel($))
+        const text = e.text.trim()
+        await patch($, LEAD, (a, now) => ({
+          ...a,
+          activity: 'pensando',
+          detail: '',
+          task: text ? clip(text, 80) : a.task,
+          call: '',
+          since: now,
+          taskStart: now,
+          trail: [],
+        }))
+        if (text) await note($, `pedido: ${clip(text, 70)}`)
+      }
     } catch {}
 
     return next(e)
+  })
+
+  // Cada pedido ao modelo: o Tech Lead (ou o subagente) mostra o modelo que o motor usou neste passo
+  // e os tokens do passo ficam no modelo que respondeu. Fica no caminho de toda resposta de todos os
+  // chats: o código da sala vai em try/catch e o fluxo passa intacto.
+  on('turn.step', async function* ($, e, next) {
+    const id = e.agentId ?? LEAD
+    try {
+      await setModel($, id, liveModel(e.model))
+    } catch {}
+    const r = yield* next(e)
+    try {
+      if (r.usage) {
+        const tokens = spent(r.usage).tokens
+        const model = liveModel(r.usage.model) || liveModel(e.model) || (await read($, agents))[id]?.model || ''
+        if (tokens > 0 && model) {
+          stepTokens.set(e.turnId, mergeBy(stepTokens.get(e.turnId), { [model]: tokens }))
+          while (stepTokens.size > STEPS_MAX) {
+            const oldest = stepTokens.keys().next().value
+            if (oldest === undefined) break
+            stepTokens.delete(oldest)
+          }
+        }
+      }
+    } catch {}
+    return r
   })
 
   // Fim de um turno: soma os tokens, e o subagente que terminou vira "concluído".
@@ -648,6 +720,15 @@ export const register: Register = on => {
     const result = await next(e)
     try {
       const used = spent(e.usage)
+      const mine = e.agentId ?? LEAD
+      // Por modelo: o que os passos registraram; sem eles (plugin recarregado no meio), tudo no modelo do fim.
+      let by = stepTokens.get(e.turnId)
+      stepTokens.delete(e.turnId)
+      if (!by && used.tokens > 0) {
+        const model = liveModel(e.usage?.model) || (await read($, agents))[mine]?.model || ''
+        if (model) by = { [model]: used.tokens }
+      }
+      const add = { ...used, ...(by ? { byModel: by } : {}) }
       if (!e.agentId) {
         await patch($, LEAD, (a, now) => ({
           ...a,
@@ -659,8 +740,9 @@ export const register: Register = on => {
           tokIn: (a.tokIn ?? 0) + used.tokIn,
           tokOut: (a.tokOut ?? 0) + used.tokOut,
           tokCache: (a.tokCache ?? 0) + used.tokCache,
+          ...(by ? { byModel: mergeBy(a.byModel, by) } : {}),
         }))
-        await addToDay($, (await read($, team)).lead.name, { tasks: 1, ms: e.durationMs, ...used })
+        await addToDay($, (await read($, team)).lead.name, { tasks: 1, ms: e.durationMs, ...add })
       } else {
         const id = e.agentId
         const row = (await read($, agents))[id]
@@ -677,11 +759,12 @@ export const register: Register = on => {
             tokIn: (a.tokIn ?? 0) + used.tokIn,
             tokOut: (a.tokOut ?? 0) + used.tokOut,
             tokCache: (a.tokCache ?? 0) + used.tokCache,
+            ...(by ? { byModel: mergeBy(a.byModel, by) } : {}),
           }))
           const took = fmtDuration(now - (row.taskStart ?? row.born))
           const cost = used.tokens > 0 ? `, ${fmtTokens(used.tokens)} tokens` : ''
           await note($, `${name} ${e.isAborted ? 'interrompido' : 'concluiu'} (${took}${cost}): ${clip(row.task, 50)}`)
-          await addToDay($, row.roleName, { tasks: 1, ms: now - (row.taskStart ?? row.born), ...used })
+          await addToDay($, row.roleName, { tasks: 1, ms: now - (row.taskStart ?? row.born), ...add })
         }
       }
     } catch {}
@@ -872,7 +955,9 @@ export const register: Register = on => {
           const status = STATUS[p.activity]
           const idle = p.activity === 'livre'
           const time = sinceText(now, p.taskStart, p.activity)
-          const facts = [time, p.tokens > 0 ? `${fmtTokens(p.tokens)} tokens ${fmtTokDetail(p)}`.trimEnd() : ''].filter(Boolean).join(' · ')
+          const split = fmtByModel(p.byModel)
+          const tokText = p.tokens > 0 ? `${fmtTokens(p.tokens)} tokens ${fmtTokDetail(p)}`.trimEnd() + (split ? ` · por modelo: ${split}` : '') : ''
+          const facts = [time, tokText].filter(Boolean).join(' · ')
           const info = [p.detail, p.task].filter(Boolean).join('  ·  ')
           const steps = trailText(p.trail)
           return (
@@ -934,6 +1019,7 @@ export const register: Register = on => {
             {todayRoles.map(r => (
               <Text dimColor wrap="truncate-end">
                 {r.role}: {r.tasks} {r.tasks === 1 ? 'tarefa' : 'tarefas'} · {fmtDuration(r.ms)} · {`${fmtTokens(r.tokens)} tokens ${fmtTokDetail(r)}`.trimEnd()}
+                {fmtByModel(r.byModel) ? ` · por modelo: ${fmtByModel(r.byModel)}` : ''}
               </Text>
             ))}
             <Button key="copy-day" label="Copiar resumo do dia" onPress={() => copyDay($, e.surface)} />

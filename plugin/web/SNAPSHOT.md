@@ -33,10 +33,11 @@ type Snapshot = {
   tokIn: number           // entrada nova + gravação de cache (parte de `tokens`). Ausente em retratos antigos (plugin 0.6.x): a página trata como 0
   tokOut: number          // saída (parte de `tokens`). Idem
   tokCache: number        // leitura de cache; NÃO entra em `tokens`. Idem
+  byModel?: Record<string, number>  // desde a 0.8.0: tokens do chat por nome de modelo, {"Opus": 120000, "Sonnet": 395000}; soma dos `byModel` dos agentes; mesma regra de `tokens` (entrada + saída, sem o cache lido). Ausente em retratos 0.7.x e sem dado. A página só mostra a divisão com 2+ modelos
   agents: {
     key: string           // id estável da linha
     title: string         // "Tech Lead", "Dev Backend 2", "QA Android"
-    model: string         // "Opus" | "Sonnet" | "Haiku" | "Fable" | ""
+    model: string         // "Opus" | "Sonnet" | "Haiku" | "Fable" | "". Desde a 0.8.0 é o modelo EM USO (o do chat, se o dono troca de modelo ou usa `opusplan`); antes era o fixo da equipe
     activity: string      // livre|ocioso|pensando|lendo|editando|comando|delegando|aprovacao|concluido
     label: string         // rótulo pronto em português ("editando", "aguardando você")
     color: string         // cor do status, #RRGGBB
@@ -47,11 +48,12 @@ type Snapshot = {
     tokIn: number         // entrada nova + gravação de cache deste agente (opcional: retratos antigos não têm)
     tokOut: number        // saída deste agente (opcional)
     tokCache: number      // leitura de cache deste agente; fora de `tokens` (opcional)
+    byModel?: Record<string, number>  // desde a 0.8.0: tokens deste agente por modelo (soma = `tokens`); ausente em retratos 0.7.x
     temp: boolean         // papel temporário (não está no arquivo da equipe)
     trail: { op: string; what: string }[]  // histórico: op = leu|editou|rodou|buscou|abriu; mais recente por último
   }[]
   log: { at: number; text: string }[]   // últimos eventos, mais recente por último (sem o texto dos pedidos)
-  daily: { date: string; roles: { role: string; tasks: number; ms: number; tokens: number; tokIn?: number; tokOut?: number; tokCache?: number }[] }  // tokIn/tokOut/tokCache: mesma divisão de `tokens`; ausentes em retratos antigos; resumo do dia deste chat; date = YYYY-MM-DD (dia gravado pelo plugin); a página compara com o "hoje" no fuso do navegador
+  daily: { date: string; roles: { role: string; tasks: number; ms: number; tokens: number; tokIn?: number; tokOut?: number; tokCache?: number; byModel?: Record<string, number> }[] }  // tokIn/tokOut/tokCache: mesma divisão de `tokens`; ausentes em retratos antigos; byModel (0.8.0): tokens do papel no dia por modelo, ausente em dias gravados antes (a coluna "Modelos" mostra "–"); resumo do dia deste chat; date = YYYY-MM-DD (dia gravado pelo plugin); a página compara com o "hoje" no fuso do navegador
 }
 ```
 

@@ -11,7 +11,8 @@ Os marcos correspondem às versões (SemVer) e, quando forem criados, aos milest
 | 0.4.x | Painel web (Lista, Mosaico, TV) e edição de mesas | Entregue |
 | 0.5.x | Guia automático de delegação e skill de instalação | Entregue |
 | 0.6.x | Squadesk código aberto, manual completo, fuso local | Entregue |
-| 0.7.x | Tokens separados em entrada, saída e cache lido | Entregue (0.7.0 é a atual) |
+| 0.7.x | Tokens separados em entrada, saída e cache lido | Entregue |
+| 0.8.x | A mesa mostra o modelo em uso; tokens por modelo | Entregue (0.8.0 é a atual; [[Tarefa - Modelo ao vivo]]) |
 | próxima | A definir com o dono | Ver as candidatas abaixo |
 
 ## Candidatas à próxima versão (esperam o OK do dono)

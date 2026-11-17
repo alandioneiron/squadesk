@@ -2,14 +2,15 @@ import { expect, mock, test } from 'claude-code/testing'
 import type { On } from 'claude-code'
 
 import type { AgentRow } from '../types'
-import { dayText, pickTitle, today } from '../hooks/live'
-import { activityFor, detailFor, emptyLead, fmtDuration, fmtTime, fmtTokens, localZone, roster, trailText, validZone } from '../hooks/room'
+import { addDay, buildSnapshot, dayText, pickTitle, today } from '../hooks/live'
+import { activityFor, detailFor, emptyLead, fmtByModel, fmtDuration, fmtTime, fmtTokens, localZone, roster, trailText, validZone } from '../hooks/room'
 import {
   addRoleTo,
   defaultTeam,
   exampleFile,
   isTempRole,
   LEAD,
+  liveModel,
   looksLikeRole,
   parseTeam,
   pickRole,
@@ -20,7 +21,7 @@ import {
   teamDirs,
   teamToFile,
 } from '../hooks/team'
-import { GUIDE_BLOCK } from '../hooks/guide'
+import { GUIDE_BLOCK, guideText } from '../hooks/guide'
 
 const DESKTOP = {
   plugin: 'sala-agentes',
@@ -692,4 +693,126 @@ test('guia da sala: o Tech Lead recebe a equipe e como delegar no começo da con
   expect(off.blocks.map(b => b.name)).toEqual(['currentDate'])
   expect(teamToFile(parseTeam(store.file, 'x')).orientar).toBe(false)
   expect(teamToFile(defaultTeam()).orientar).toBeUndefined()
+})
+
+test('liveModel: o modelo em uso, sem alias de plano nem ids que não são de modelo', async () => {
+  expect(liveModel('claude-opus-5-5')).toBe('Opus')
+  expect(liveModel('claude-opus-5-5[1m]')).toBe('Opus')
+  expect(liveModel('sonnet')).toBe('Sonnet')
+  expect(liveModel('claude-fable-5')).toBe('Fable')
+  expect(liveModel('opusplan')).toBe('')
+  expect(liveModel('default')).toBe('')
+  expect(liveModel('')).toBe('')
+  expect(liveModel(undefined)).toBe('')
+  expect(liveModel('claude-mythos-1-20260101')).toBe('Mythos')
+})
+
+test('por modelo: texto, soma no dia, coluna do resumo e retrato sem o campo em dados antigos', async () => {
+  expect(fmtByModel(undefined)).toBe('')
+  expect(fmtByModel({ Opus: 5_000 })).toBe('')
+  expect(fmtByModel({ Opus: 120_000, Sonnet: 395_000, Haiku: 0 })).toBe('Sonnet 395 mil · Opus 120 mil')
+
+  let d = addDay({ date: '', roles: [] }, 1_000, 'Tech Lead', { tasks: 1, ms: 10, tokens: 300, byModel: { Opus: 100, Sonnet: 200 } })
+  d = addDay(d, 1_000, 'Tech Lead', { tasks: 1, ms: 10, tokens: 50, byModel: { Opus: 50 } })
+  d = addDay(d, 1_000, 'QA', { tasks: 1, ms: 10, tokens: 40 })
+  expect(d.roles[0]?.byModel).toEqual({ Opus: 150, Sonnet: 200 })
+  expect(d.roles[1]?.byModel).toBeUndefined()
+  const text = dayText(d, 'proj')
+  expect(text).toContain('| Cache lido | Modelos |')
+  expect(text).toContain('Sonnet 200 · Opus 150 |')
+  expect(text).toMatch(/\| QA \|.*\| – \|$/m)
+
+  const snap = buildSnapshot({
+    id: 'x', title: '', project: 'p', cwd: '', startedAt: 0, now: 1_000, ended: false, version: '',
+    team: defaultTeam(), agents: { [LEAD]: { ...emptyLead(), model: 'Fable', byModel: { Fable: 10, Opus: 5 } } }, log: [], daily: d,
+  })
+  expect(snap.byModel).toEqual({ Fable: 10, Opus: 5 })
+  expect(snap.agents[0]?.byModel).toEqual({ Fable: 10, Opus: 5 })
+  expect(snap.agents[0]?.model).toBe('Fable')
+  const old = buildSnapshot({
+    id: 'x', title: '', project: 'p', cwd: '', startedAt: 0, now: 1_000, ended: false, version: '',
+    team: defaultTeam(), agents: { [LEAD]: emptyLead() }, log: [], daily: { date: '', roles: [] },
+  })
+  expect(old.byModel).toBeUndefined()
+  expect(old.agents[0]?.byModel).toBeUndefined()
+})
+
+test('guia: o modelo em uso do Tech Lead, e opusplan', async () => {
+  const team = defaultTeam()
+  expect(guideText(team)).toContain('Você é o Tech Lead (Opus)')
+  expect(guideText(team, 'claude-fable-5')).toContain('Você é o Tech Lead (Fable)')
+  expect(guideText(team, 'opusplan')).toContain('Tech Lead (Opus no plano, Sonnet na execução)')
+  expect(guideText(team, 'default')).toContain('Tech Lead (Opus)')
+  expect(guideText(team)).not.toContain('Opus fica com você')
+})
+
+// O resultado de um turn.step só chega depois de ler o fluxo até o fim.
+async function runStep(stream: AsyncGenerator<unknown, unknown> & { readonly result: Promise<unknown> }) {
+  for await (const chunk of stream) void chunk
+  return stream.result
+}
+
+test('a mesa do Tech Lead segue o modelo de cada passo e os tokens ficam por modelo', async ($, on) => {
+  const writes = new Map<string, string>()
+  const clock = session(on, { writes })
+  on('session.model', async () => ({ value: 'opusplan' }) as never)
+  const steps: Record<string, { model: string; input: number; output: number }> = {
+    a: { model: 'claude-opus-5-5', input: 1_000, output: 100 },
+    b: { model: 'claude-sonnet-5-5', input: 2_000, output: 300 },
+  }
+  on('turn.step', async function* (_$, e) {
+    const s = steps[e.index === 0 ? 'a' : 'b']
+    const usage = { input_tokens: s?.input ?? 0, output_tokens: s?.output ?? 0, cache_creation_input_tokens: 0, cache_read_input_tokens: 0, model: s?.model ?? '' }
+    yield { kind: 'stop', stopReason: 'end_turn', usage } as never
+    return {
+      turnId: e.turnId,
+      index: e.index,
+      answer: '',
+      toolUses: [],
+      stopReason: 'end_turn',
+      usage: { input_tokens: s?.input ?? 0, output_tokens: s?.output ?? 0, model: s?.model ?? '' },
+    } as never
+  })
+  const pane = await $.ui.mount(DESKTOP)
+  const alt = async () => String((await pane.find({ type: 'Svg' }))?.props.alt)
+  await $.session.start({ cwd: 'D:/proj', surface: 'desktop', isInteractive: true } as never)
+  await $.turn.start({ turnId: 't-1', text: 'faça algo' } as never)
+  // opusplan não decide nada sozinho: o passo diz o modelo.
+  await runStep($.turn.step({ turnId: 't-1', index: 0, model: 'claude-opus-5-5' } as never))
+  expect(String((await pane.find({ type: 'Svg' }))?.props.source)).toContain('· Opus')
+  await runStep($.turn.step({ turnId: 't-1', index: 1, model: 'claude-sonnet-5-5' } as never))
+  expect(String((await pane.find({ type: 'Svg' }))?.props.source)).toContain('· Sonnet')
+  expect(await alt()).toContain('Tech Lead')
+  // Subagente que não existe: o passo dele não cria linha nem mexe no Tech Lead.
+  await runStep($.turn.step({ turnId: 't-9', index: 0, model: 'claude-haiku-4-5', agentId: 'ghost' } as never))
+  expect(String((await pane.find({ type: 'Svg' }))?.props.source)).toContain('· Sonnet')
+
+  await $.turn.complete({
+    answer: 'ok',
+    durationMs: 1_000,
+    isAborted: false,
+    turnId: 't-1',
+    reason: 'answer',
+    usage: { input_tokens: 3_000, output_tokens: 400, model: 'claude-sonnet-5-5' },
+  } as never)
+  // Turno sem passos registrados (plugin recarregado no meio): tudo vai para o modelo do fim.
+  await $.turn.complete({
+    answer: 'ok',
+    durationMs: 1_000,
+    isAborted: false,
+    turnId: 't-2',
+    reason: 'answer',
+    usage: { input_tokens: 1_000, output_tokens: 0, model: 'claude-fable-5' },
+  } as never)
+  await clock.advance(10_000)
+  await clock.advance(1_600)
+  const file = [...writes.keys()].find(path => /live[\\/]sess-1\.json$/.test(path))
+  const snap = JSON.parse(writes.get(file ?? '') ?? '{}')
+  const lead = snap.agents.find((a: { key: string }) => a.key === 'lead')
+  expect(lead.tokens).toBe(4_400)
+  expect(lead.byModel).toEqual({ Opus: 1_100, Sonnet: 2_300, Fable: 1_000 })
+  expect(snap.byModel).toEqual(lead.byModel)
+  expect(snap.daily.roles[0].byModel).toEqual(lead.byModel)
+  expect(await pane.find({ type: 'Text', text: /por modelo: Sonnet 2,3 mil · Opus 1,1 mil · Fable 1,0 mil/ })).toBeDefined()
+  await pane.unmount()
 })

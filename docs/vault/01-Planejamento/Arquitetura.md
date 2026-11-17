@@ -9,7 +9,7 @@ O caminho dos dados, desenhado, está no `docs/MANUAL.md`, seção 1. A tabela d
 
 ## Componentes
 - **Plugin** (`plugin/`): function hooks do Claude Code.
-  - `hooks/register.tsx`: eventos e comandos `/sala`.
+  - `hooks/register.tsx`: eventos e comandos `/sala`. O `turn.step` fica no caminho de toda resposta: só lê o modelo e os tokens do passo e repassa o fluxo sem mexer (ADR-0008).
   - `hooks/team.ts`: equipe; acha o papel pelo nome, apelido, palavras ou modelo, e cuida do papel temporário "Papel: tarefa".
   - `hooks/room.ts`: desenho SVG e lista.
   - `hooks/live.ts`: retrato do chat para o painel e resumo do dia.

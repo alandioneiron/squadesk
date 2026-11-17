@@ -30,6 +30,10 @@ type Chat = {
   /** Última linha do log do chat. */
   log: string
   rows: ReturnType<typeof row>[]
+  /** Tokens do líder por modelo (soma = 150 mil). Ausente: retrato sem byModel, como os da 0.7.x. */
+  leadByModel?: Record<string, number>
+  /** Resumo do dia do Tech Lead por modelo (soma = 180 mil). */
+  dayLead?: Record<string, number>
   ended?: boolean
   /** Há quantos ms o chat foi gravado pela última vez. */
   age?: number
@@ -49,17 +53,37 @@ const row = (
   id, role, roleName, model, activity, detail, task, born, since: now, tokens, ...tokSplit(tokens), taskStart: now - born * 60_000, trail,
 })
 
+type ByModel = Record<string, number>
+const sum = (o: ByModel) => Object.values(o).reduce((a, b) => a + b, 0)
+
 function snapshot(c: Chat) {
+  const leadModel = Object.keys(c.leadByModel ?? {})[0] ?? ''
   let agents: Record<string, unknown> = {
-    [LEAD]: { ...room.emptyLead(), activity: 'delegando', detail: c.leadDetail, since: now, tokens: 150_000, ...tokSplit(150_000), taskStart: now - 600_000 },
+    [LEAD]: { ...room.emptyLead(), ...(leadModel ? { model: leadModel } : {}), activity: 'delegando', detail: c.leadDetail, since: now, tokens: 150_000, ...tokSplit(150_000), taskStart: now - 600_000 },
   }
   for (const r of c.rows) agents = team.seatAgent(agents, r)
-  return live.buildSnapshot({
+  const s = live.buildSnapshot({
     id: c.id, title: c.title, project: c.project, cwd: `C:\\projetos\\${c.project}`,
     startedAt: now - 3_600_000, now: now - (c.age ?? 0), ended: c.ended ?? false, version: 'exemplo',
     team: team.defaultTeam(), agents, log: [{ at: now - 90_000, text: c.log }],
-    daily: { date: live.today(now), roles: [{ role: 'Tech Lead', tasks: 4, ms: 2_400_000, tokens: 180_000, ...tokSplit(180_000) }, { role: 'Dev Backend', tasks: 3, ms: 900_000, tokens: 95_000, ...tokSplit(95_000) }] },
+    daily: {
+      date: live.today(now),
+      roles: [
+        { role: 'Tech Lead', tasks: 4, ms: 2_400_000, tokens: 180_000, ...tokSplit(180_000), ...(c.leadByModel ? { byModel: c.dayLead } : {}) },
+        { role: 'Dev Backend', tasks: 3, ms: 900_000, tokens: 95_000, ...tokSplit(95_000), ...(c.leadByModel ? { byModel: { Sonnet: 95_000 } } : {}) },
+      ],
+    },
   })
+  // byModel (0.8.0): os hooks novos gravam isto; aqui entra à mão para o gerador não depender deles.
+  // Exemplo-3 (sem leadByModel) imita um retrato 0.7.x: nenhum byModel.
+  if (c.leadByModel) {
+    for (const a of s.agents) a.byModel = a.key === LEAD ? c.leadByModel : a.tokens > 0 ? { [a.model]: a.tokens } : undefined
+    const total: ByModel = {}
+    for (const a of s.agents) for (const [m, n] of Object.entries(a.byModel ?? {})) total[m] = (total[m] ?? 0) + n
+    s.byModel = total
+    if (sum(c.leadByModel) !== 150_000 || sum(c.dayLead!) !== 180_000) throw new Error('byModel do líder não bate com tokens')
+  }
+  return s
 }
 
 const dir = process.argv[2] ?? join(ROOT, 'plugin', 'web', 'sample')
@@ -67,6 +91,8 @@ mkdirSync(dir, { recursive: true })
 const list = [
   snapshot({
     id: 'exemplo-1', project: 'loja-online', title: 'Checkout com Pix', leadDetail: '→ pagamento Pix',
+    // opusplan: Opus no plano, Sonnet na execução
+    leadByModel: { Opus: 120_000, Sonnet: 30_000 }, dayLead: { Opus: 140_000, Sonnet: 40_000 },
     log: 'Tech Lead → Dev Backend (Sonnet): Endpoint do QR Code Pix',
     rows: [
       row('b1', 'dev-backend', 'Dev Backend', 'Sonnet', 'editando', 'pix.service.ts', 'Gerar o QR Code Pix no checkout', 1, 42_000,
@@ -79,6 +105,7 @@ const list = [
   }),
   snapshot({
     id: 'exemplo-2', project: 'app-financeiro', title: 'Tela de extrato', leadDetail: '→ filtro por período', age: 15 * 60_000,
+    leadByModel: { Opus: 150_000 }, dayLead: { Opus: 180_000 },
     log: 'Tech Lead → Dev Frontend (Sonnet): Filtro de período do extrato',
     rows: [
       row('f1', 'dev-frontend', 'Dev Frontend', 'Sonnet', 'pensando', '', 'Filtrar o extrato por período', 1, 0,

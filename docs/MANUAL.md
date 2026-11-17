@@ -246,7 +246,8 @@ Resumo:
 **No app desktop, de cima para baixo:**
 - **Aviso:** se o arquivo da equipe tiver erro, ele aparece no topo, com o motivo.
 - **Desenho:** o Tech Lead e as mesas.
-  - A cor do personagem segue o modelo: dourado para Opus, laranja para Sonnet, verde-água para Haiku.
+  - A cor do personagem segue o modelo: dourado para Opus, laranja para Sonnet, verde-água para Haiku, lilás para Fable.
+  - Cada mesa mostra o modelo que o agente está usando de fato, informado pelo Claude Code a cada resposta. Se você trocar o modelo do chat com `/model` (por exemplo, de Opus para Fable), a mesa do Tech Lead muda na resposta seguinte, com a cor junto. Com o `opusplan`, ela alterna: Opus enquanto planeja, Sonnet enquanto executa. O modelo do líder no arquivo da equipe só aparece até a primeira resposta do chat.
   - O balão mostra a atividade.
   - A linha tracejada liga quem delegou a quem recebeu.
 - **Lista:** papel, modelo, atividade, o arquivo ou comando atual, a tarefa, o cronômetro, os tokens e um resumo do que o agente já fez ("editou: a.ts, b.ts · leu: c.md").
@@ -353,7 +354,7 @@ O limite é de 11 mesas fixas.
 **O que é:** no começo de cada conversa, e de novo depois de `/clear` ou de uma compactação, o plugin põe no contexto do modelo um bloco com as mesas do projeto e estas regras:
 - **Pedido pequeno:** o modelo faz sozinho. Delegar custa mais tokens do que resolve.
 - **Pedido com várias partes:** ele divide e delega às mesas desde o começo, e roda em paralelo o que é independente.
-- **Formato:** cada tarefa vai como "Papel: tarefa", com o prompt "Você é o <Papel>…" e o modelo da mesa. Haiku cuida de documentação e conferência, Sonnet de código e QA ponta a ponta; o Opus fica com o Tech Lead.
+- **Formato:** cada tarefa vai como "Papel: tarefa", com o prompt "Você é o <Papel>…" e o modelo da mesa. Haiku cuida de documentação e conferência, Sonnet de código e QA ponta a ponta. Arquitetura, decisões e revisão final ficam com o Tech Lead, seja qual for o modelo do chat. O guia diz ao Tech Lead o modelo que ele está usando; com o `opusplan`, "Opus no plano, Sonnet na execução".
 - **Falta de especialidade:** ele cria um papel temporário ou, em projeto grande, uma mesa fixa.
 
 **Ligado por padrão:** sim. O guia vai para o modelo principal. Se um subagente o receber, o próprio texto manda ignorá-lo e fazer só a tarefa dele.
@@ -378,6 +379,7 @@ O limite é de 11 mesas fixas.
   O cache lido fica fora do total porque custa cerca de 10% do preço normal: somado, ele inflaria o número sem refletir o gasto real. Na lista de agentes da sala e no painel web, cada agente mostra o detalhe, como "515 mil tokens (entrada 480 mil · saída 35 mil · cache lido 12 mi)". O desenho da sala mostra só o total.
 
   Chats abertos antes da versão 0.7.0 só começam a separar a partir do primeiro turno depois da atualização: nesses, entrada mais saída pode dar menos que o total.
+- **Tokens por modelo:** quando um agente usa mais de um modelo no mesmo chat, a lista da sala e o painel web mostram a divisão, como "por modelo: Opus 120 mil · Sonnet 395 mil". A soma dá o total do agente. Isso acontece quando você troca o modelo com `/model`, com o `opusplan` e quando o Claude Code recorre ao modelo reserva. Com um modelo só, a divisão não aparece. Chats abertos antes da 0.8.0 só dividem a partir do primeiro turno depois da atualização.
 - **Cronômetro:** há quanto tempo o agente está na tarefa atual.
 - **Histórico:** os últimos 30 passos de cada agente (operação e alvo).
   - Na sala do chat aparece resumido numa linha, como "editou: a.ts, b.ts · leu: c.md (+2)".
@@ -391,7 +393,7 @@ O limite é de 11 mesas fixas.
 
 ### 5.10 Resumo do dia
 
-**O que é:** por papel, quantas tarefas foram concluídas hoje neste chat, quanto tempo levaram e quantos tokens gastaram, com as colunas Entrada, Saída e Cache lido (ver 5.8). Vem em Markdown, pronto para colar num relatório.
+**O que é:** por papel, quantas tarefas foram concluídas hoje neste chat, quanto tempo levaram e quantos tokens gastaram, com as colunas Entrada, Saída e Cache lido e a coluna Modelos, que mostra o modelo usado ou a divisão quando houve mais de um (ver 5.8). Vem em Markdown, pronto para colar num relatório.
 
 **Como usar:** `/sala resumo` ou o botão "Copiar resumo do dia". A seção "Hoje neste chat" da sala mostra o mesmo.
 
@@ -434,7 +436,7 @@ No Windows (PowerShell), `node "$HOME\.claude\mods\sala-agentes\web\server.mjs"`
   A decisão é sua: o Squadesk não mexe no firewall. Sem liberar, só o próprio PC acessa (`localhost`).
 
 **Modos de visualização** (seletor no topo; a escolha fica guardada no navegador):
-- **Lista:** chats à esquerda e a sala escolhida grande à direita, com desenho, agentes, eventos e botão Mesas. O cartão "tokens hoje", o cabeçalho da sala e cada agente mostram o detalhe de entrada, saída e cache lido (ver 5.8). A lista de chats, o Mosaico e a TV mostram só o total.
+- **Lista:** chats à esquerda e a sala escolhida grande à direita, com desenho, agentes, eventos e botão Mesas. O cartão "tokens hoje", o cabeçalho da sala e cada agente mostram o detalhe de entrada, saída e cache lido e, quando houve mais de um modelo, a divisão por modelo (ver 5.8). A lista de chats, o Mosaico e a TV mostram só o total.
 - **Mosaico:** estilo câmeras de segurança, com divisão Auto, 1, 4, 6, 9 ou 16, paginação e borda laranja em quem espera você. Clique numa tela para ver os detalhes.
 - **TV:** um chat por vez, que troca sozinho a cada 5, 10, 20 ou 30 s e para em quem espera você. Tem letras grandes.
 
@@ -537,7 +539,7 @@ Nome: `sala-agentes.json`. Fica em `.claude/` do projeto (vale só nele) ou em `
 | `papeis[].modelo` | recomendado | `Opus`, `Sonnet`, `Haiku` ou `Fable`. Agentes desse modelo preferem esta mesa |
 | `papeis[].palavras` | recomendado | Começos de palavra, em minúsculas e sem acento: `test` pega "testes" e "testar" |
 | `papeis[].apelidos` | não | Outros nomes da mesa. Citar o nome ou um apelido manda o agente direto para ela |
-| `lider` | não | Nome e modelo do líder (padrão: Tech Lead, Opus) |
+| `lider` | não | Nome do líder e o modelo mostrado até a primeira resposta (padrão: Tech Lead, Opus). Depois, a mesa segue o modelo em uso no chat |
 | `orientar` | não | `false` desliga o guia automático |
 
 Se o arquivo tiver erro, a sala usa a equipe padrão e mostra o motivo no topo da sala.

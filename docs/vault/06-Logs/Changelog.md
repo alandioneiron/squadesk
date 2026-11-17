@@ -8,6 +8,15 @@ Segue SemVer. As notas de release saem daqui. As versões anteriores a 0.6.0 for
 ## Não lançado
 - (nada)
 
+## 0.8.0 - 2026-11-17
+- A mesa mostra o modelo em uso (ADR-0008):
+  - cada mesa mostra o modelo em uso, informado pelo Claude Code a cada resposta; trocar o modelo do chat (`/model`) troca a mesa do Tech Lead, e com o `opusplan` ela alterna entre Opus e Sonnet;
+  - tokens por modelo (`byModel`) no agente, no chat e no resumo do dia, com a coluna Modelos;
+  - o guia usa o modelo em uso, em vez de "Tech Lead (Opus)" fixo.
+
+  Retratos 0.7.x não têm `byModel`, e o painel mostra "–". A tabela do dia rola dentro do quadro no celular.
+- Correção: o início de turno de um subagente não mexe mais na mesa do Tech Lead.
+
 ## 0.7.0 - 2026-11-11
 - Tokens separados em entrada, saída e cache lido (ADR-0007):
   - na sala do chat: nas linhas de agente e no resumo do dia;

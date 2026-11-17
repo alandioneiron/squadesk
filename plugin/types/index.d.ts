@@ -64,6 +64,8 @@ export type AgentRow = {
   tokOut?: number
   /** Leitura de cache do agente (fica fora de `tokens`). Ausente em linhas antigas. */
   tokCache?: number
+  /** Tokens (entrada + saída) por modelo usado. Ausente em linhas antigas. */
+  byModel?: Record<string, number>
   /** Início da tarefa atual (ms). Ausente em linhas antigas. */
   taskStart?: number
   /** Arquivos e comandos tocados na tarefa, mais recente por último. Ausente em linhas antigas. */
@@ -83,6 +85,8 @@ export type DayRole = {
   tokOut?: number
   /** Leitura de cache (fora de `tokens`). Ausente em resumos antigos. */
   tokCache?: number
+  /** Tokens (entrada + saída) por modelo. Ausente em resumos antigos. */
+  byModel?: Record<string, number>
 }
 
 /** Resumo do dia deste chat; zera quando a data muda. */

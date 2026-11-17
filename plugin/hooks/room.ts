@@ -175,6 +175,16 @@ export function fmtTokDetail(t: { tokIn?: number; tokOut?: number; tokCache?: nu
   return `(${parts.join(' · ')})`
 }
 
+/** Tokens por modelo: "Opus 120 mil · Sonnet 395 mil", do maior para o menor; '' com menos de 2 modelos. */
+export function fmtByModel(by?: Record<string, number>): string {
+  const rows = Object.entries(by ?? {}).filter(([, n]) => n > 0)
+  if (rows.length < 2) return ''
+  return rows
+    .sort((a, b) => b[1] - a[1])
+    .map(([model, n]) => `${model} ${fmtTokens(n)}`)
+    .join(' · ')
+}
+
 /** "40 s", "3 min", "1 h 05". */
 export function fmtDuration(ms: number): string {
   const s = Math.max(0, Math.round(ms / 1000))
@@ -250,6 +260,7 @@ export type RosterLine = {
   tokIn: number
   tokOut: number
   tokCache: number
+  byModel?: Record<string, number>
   taskStart: number
   trail: TrailItem[]
   temp: boolean
@@ -269,6 +280,7 @@ export function roster(team: Team, agents: Record<string, AgentRow>): RosterLine
     tokIn: a.tokIn ?? 0,
     tokOut: a.tokOut ?? 0,
     tokCache: a.tokCache ?? 0,
+    byModel: a.byModel,
     taskStart: a.taskStart ?? 0,
     trail: a.trail ?? [],
     temp: isTempRole(a.role),
@@ -325,7 +337,7 @@ export function plan(team: Team, agents: Record<string, AgentRow>): Plan {
       x: 380,
       y: ROW0,
       title: team.lead.name,
-      model: team.lead.model,
+      model: lead.model || team.lead.model,
       activity: lead.activity,
       look: LOOKS[0] ?? lookAt(0),
       agent: lead,

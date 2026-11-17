@@ -5,6 +5,27 @@ tags: [log]
 
 Mais recente primeiro. Use o [[Template - Log Diário]]. Seja honesto: registre falhas e resultados parciais.
 
+## 2026-11-17 - 0.8.0: a mesa mostra o modelo em uso e os tokens por modelo
+**Agente:** Tech Lead (Opus), Dev Plugin (Sonnet), Dev Painel Web (Sonnet), QA (Haiku)
+**O quê:**
+- hook `turn.step`: a mesa do Tech Lead e a dos subagentes mostram o modelo que o motor usou em cada passo;
+- `$.session.model()` no começo do chat e de cada turno;
+- campo `byModel` no agente, no chat e no resumo do dia, com a coluna Modelos;
+- o guia sem "Tech Lead (Opus)" fixo; `opusplan` vira "Opus no plano, Sonnet na execução";
+- correção: o `turn.start` mexia no Tech Lead também quando o turno era de um subagente;
+- ADR-0008.
+
+Ver [[Tarefa - Modelo ao vivo]].
+**Por quê:** o dono perguntou pelo `/model opusplan` e se valia uma mesa a mais para o modelo forte. A resposta foi não: uma mesa é um agente. Mas a mesa do Tech Lead precisa dizer o modelo certo; se ele trocar para Fable no chat, a mesa troca também.
+**Resultado:**
+- `claude plugin validate` passou; `claude plugin test` deu 29 de 29 (4 testes novos).
+- Conferência visual numa instância isolada com os exemplos: divisão no cabeçalho, na linha do agente e na coluna Modelos. A 375 px a tabela do dia rola dentro do quadro, sem estourar a página. O Tech Lead corrigiu a coluna do papel, que quebrava "Dev Backend" no meio da palavra.
+- Não deu para rodar o motor real antes de publicar: o `claude -p` desta máquina está sem login. O hook segue o padrão documentado (`yield* next(e)`), e a conferência real foi feita depois de publicar.
+- Achado conhecido: no dia da atualização, um papel que soma chats 0.7.x mostra a divisão só da parte nova. Isso está documentado no manual, como na 0.7.0.
+- Publicado na máquina, painel reiniciado, `.skill` regerado.
+**Docs atualizados:** `docs/MANUAL.md` (5.1, 5.7, 5.8, 5.10, 5.12, 7), `plugin/web/SNAPSHOT.md`, [[Registro de Decisões (ADR)]], [[Arquitetura]], [[Changelog]], [[Roteiro]], [[Último Agente - Handoff]]
+**Próximo:** ver o handoff.
+
 ## 2026-11-11 - 0.7.0: tokens separados em entrada, saída e cache lido
 **Agente:** Tech Lead (Opus), Dev Plugin (Sonnet), Dev Painel Web (Sonnet)
 **O quê:**

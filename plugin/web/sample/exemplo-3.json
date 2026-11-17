@@ -4,8 +4,8 @@
  "title": "Cadastro de férias",
  "project": "portal-rh",
  "cwd": "C:\\projetos\\portal-rh",
- "startedAt": 1794430205415,
- "updatedAt": 1794426605415,
+ "startedAt": 1794927359545,
+ "updatedAt": 1794923759545,
  "ended": true,
  "version": "exemplo",
  "team": {
@@ -126,7 +126,7 @@
    "color": "#C9A24B",
    "detail": "→ resumo final",
    "task": "",
-   "taskStart": 1794433205415,
+   "taskStart": 1794930359545,
    "tokens": 150000,
    "tokIn": 138000,
    "tokOut": 12000,
@@ -222,12 +222,12 @@
  ],
  "log": [
   {
-   "at": 1794433715415,
+   "at": 1794930869545,
    "text": "Tech Lead → Documentador (Haiku): Guia de uso do portal"
   }
  ],
  "daily": {
-  "date": "2026-11-11",
+  "date": "2026-11-17",
   "roles": [
    {
     "role": "Tech Lead",

@@ -739,8 +739,12 @@ details.stale{margin-top:10px}
 details.stale>summary{font-size:14px;font-weight:700;margin-bottom:8px;color:var(--tx2)}
 details.stale[open]>summary{color:var(--tx)}
 .empty{background:var(--card);border:1px dashed var(--line);border-radius:12px;padding:22px;text-align:center;color:var(--tx2)}
-.tbl{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--card)}
+.tbl{border:1px solid var(--line);border-radius:12px;overflow-x:auto;background:var(--card)}
 table{width:100%;border-collapse:collapse}
+#daily-tbl table{min-width:640px}
+#daily-tbl th:first-child,#daily-tbl td:first-child{overflow-wrap:normal;min-width:7em}
+#daily-tbl .note{position:sticky;left:0;max-width:100vw}
+th.mdls,td.mdls{text-align:left;min-width:150px}
 th,td{padding:8px 12px;text-align:right;border-bottom:1px solid var(--line)}
 th:first-child,td:first-child{text-align:left;overflow-wrap:anywhere}
 th{color:var(--tx2);font-weight:600;font-size:12px}
@@ -986,9 +990,9 @@ body.fit .note{display:none}
     <div class="empty" id="daily-empty" hidden>Sem atividade registrada hoje.</div>
     <div class="tbl" id="daily-tbl" hidden>
       <table>
-        <thead><tr><th>Papel</th><th>Tarefas</th><th>Tempo</th><th>Tokens</th><th>Entrada</th><th>Saída</th><th>Cache lido</th></tr></thead>
+        <thead><tr><th>Papel</th><th>Tarefas</th><th>Tempo</th><th>Tokens</th><th>Entrada</th><th>Saída</th><th>Cache lido</th><th class="mdls">Modelos</th></tr></thead>
         <tbody id="daily-body"></tbody>
-        <tfoot><tr><td>Total</td><td id="t-tasks"></td><td id="t-ms"></td><td id="t-tok"></td><td id="t-in"></td><td id="t-out"></td><td id="t-cache"></td></tr></tfoot>
+        <tfoot><tr><td>Total</td><td id="t-tasks"></td><td id="t-ms"></td><td id="t-tok"></td><td id="t-in"></td><td id="t-out"></td><td id="t-cache"></td><td id="t-mdl" class="mdls"></td></tr></tfoot>
       </table>
       <p class="note" id="daily-note">Tokens = entrada + saída; o cache lido fica à parte e não entra no total.</p>
     </div>
@@ -1089,6 +1093,19 @@ body.fit .note{display:none}
     var parts = ['entrada ' + fmtShort(i), 'saída ' + fmtShort(t)];
     if (c > 0) parts.push('cache lido ' + fmtShort(c));
     return parts.join(' · ');
+  }
+  // Divisão por modelo (0.8.0): "Opus 120 mil · Sonnet 395 mil". Vazio com menos de 2 modelos ou sem o campo (retratos 0.7.x).
+  function modelList(o) {
+    var b = o && o.byModel;
+    if (!isObj(b)) return [];
+    return Object.keys(b).map(function (k) { return [k, Math.round(num(b[k]))]; })
+      .filter(function (p) { return p[1] > 0; })
+      .sort(function (x, y) { return y[1] - x[1]; });
+  }
+  function fmtByModel(o) {
+    var l = modelList(o);
+    if (l.length < 2) return '';
+    return l.map(function (p) { return p[0] + ' ' + fmtShort(p[1]); }).join(' · ');
   }
   function fmtHour(ms) { return dfHour.format(new Date(num(ms))); }
 
@@ -1227,7 +1244,7 @@ body.fit .note{display:none}
     g.since.dataset.t = String(st);
     g.since.hidden = !(st > 0);
     setText(g.tk, fmtTokens(a.tokens));
-    var tkd = noTrail ? '' : tokDetail(a); // só no painel do chat; a TV fica com o total
+    var tkd = noTrail ? '' : [tokDetail(a), fmtByModel(a)].filter(Boolean).join(' · '); // só no painel do chat; a TV fica com o total
     setText(g.tkd, tkd); g.tkd.hidden = !tkd;
     var det = str(a.detail), tsk = str(a.task);
     setText(g.det, det); g.det.hidden = !det;
@@ -1329,7 +1346,7 @@ body.fit .note{display:none}
     d.root.classList.toggle('attn', st.waiting > 0);
     d.age.dataset.at = String(num(s.updatedAt));
     setText(d.tokens, fmtTokens(s.tokens));
-    var sd = tokDetail(s);
+    var sd = [tokDetail(s), fmtByModel(s)].filter(Boolean).join(' · ');
     setText(d.tokDet, sd ? ' (' + sd + ')' : '');
     d.mesas.hidden = !canEdit;
     setArt(d.art, str(s.svg));
@@ -1694,13 +1711,14 @@ body.fit .note{display:none}
         if (!isObj(r)) return;
         var k = str(r.role) || '?';
         var o = map.get(k);
-        if (!o) { o = { role: k, tasks: 0, ms: 0, tokens: 0, tokIn: 0, tokOut: 0, tokCache: 0 }; map.set(k, o); }
+        if (!o) { o = { role: k, tasks: 0, ms: 0, tokens: 0, tokIn: 0, tokOut: 0, tokCache: 0, byModel: {} }; map.set(k, o); }
+        modelList(r).forEach(function (p) { o.byModel[p[0]] = (o.byModel[p[0]] || 0) + p[1]; });
         o.tasks += num(r.tasks); o.ms += num(r.ms); o.tokens += num(r.tokens);
         o.tokIn += num(r.tokIn); o.tokOut += num(r.tokOut); o.tokCache += num(r.tokCache);
       });
     });
     var rws = Array.from(map.values()).sort(function (a, b) { return b.tokens - a.tokens; });
-    var tot = rws.reduce(function (t, r) { t.tasks += r.tasks; t.ms += r.ms; t.tokens += r.tokens; t.tokIn += r.tokIn; t.tokOut += r.tokOut; t.tokCache += r.tokCache; return t; }, { tasks: 0, ms: 0, tokens: 0, tokIn: 0, tokOut: 0, tokCache: 0 });
+    var tot = rws.reduce(function (t, r) { t.tasks += r.tasks; t.ms += r.ms; t.tokens += r.tokens; t.tokIn += r.tokIn; t.tokOut += r.tokOut; t.tokCache += r.tokCache; Object.keys(r.byModel).forEach(function (m) { t.byModel[m] = (t.byModel[m] || 0) + r.byModel[m]; }); return t; }, { tasks: 0, ms: 0, tokens: 0, tokIn: 0, tokOut: 0, tokCache: 0, byModel: {} });
     var sig = JSON.stringify([today, rws]);
     if (sig !== dailySig) {
       dailySig = sig;
@@ -1710,6 +1728,11 @@ body.fit .note{display:none}
       var splitCells = function (o) {
         return o.tokIn + o.tokOut > 0 ? [fmtShort(o.tokIn), fmtShort(o.tokOut), fmtShort(o.tokCache)] : ['–', '–', '–'];
       };
+      // Um modelo: o nome; 2 ou mais: a divisão; sem dado (resumos 0.7.x): "–".
+      var modelsCell = function (o) {
+        var l = modelList(o);
+        return l.length === 0 ? '–' : l.length === 1 ? l[0][0] : fmtByModel(o);
+      };
       rws.forEach(function (r) {
         var tr = el('tr');
         tr.appendChild(el('td', null, r.role));
@@ -1717,10 +1740,12 @@ body.fit .note{display:none}
         tr.appendChild(el('td', null, fmtDur(r.ms)));
         tr.appendChild(el('td', null, fmtTokens(r.tokens)));
         splitCells(r).forEach(function (v) { tr.appendChild(el('td', null, v)); });
+        tr.appendChild(el('td', 'mdls', modelsCell(r)));
         body.appendChild(tr);
       });
       setText($('#t-tasks'), tot.tasks); setText($('#t-ms'), fmtDur(tot.ms)); setText($('#t-tok'), fmtTokens(tot.tokens));
       var tc = splitCells(tot);
+      setText($('#t-mdl'), modelsCell(tot));
       setText($('#t-in'), tc[0]); setText($('#t-out'), tc[1]); setText($('#t-cache'), tc[2]);
       var dd = tokDetail(tot), sdEl = $('#s-tok-d');
       setText(sdEl, dd); sdEl.hidden = !dd;
@@ -1898,7 +1923,7 @@ body.fit .note{display:none}
     var lm = el('div', 'rl-main');
     lm.appendChild(el('b', null, str(team.lead) || 'Tech Lead'));
     if (str(team.leadModel)) lm.appendChild(el('span', 'mdl', str(team.leadModel)));
-    lm.appendChild(el('span', 'rl-kw', 'líder (fixo)'));
+    lm.appendChild(el('span', 'rl-kw', 'líder (fixo) · padrão: a mesa mostra o modelo em uso no chat'));
     lead.appendChild(lm);
     ul.appendChild(lead);
     roles.forEach(function (r) {
