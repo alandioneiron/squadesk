@@ -15,6 +15,7 @@ tags: [log, handoff]
 ## Publicado agora
 - **GitHub:** a `main` está na 0.8.0. As tags e as releases ainda não existem.
 - **Máquina do dono:** plugin 0.8.0 instalado, painel reiniciado na versão nova e `.skill` regerado.
+- **Conferido no chat real:** `/model fable` e depois `/model opus` trocaram a mesa do Tech Lead, e a divisão "Fable · Opus" apareceu no agente, no chat e no resumo do dia.
 
 ## Em andamento
 - Nada.
@@ -25,6 +26,5 @@ tags: [log, handoff]
 - Fazer login no `claude -p` desta máquina, para testar hooks no motor real antes de publicar.
 
 ## Próximos passos (na ordem)
-1. Conferir num chat real que a divisão por modelo aparece: trocar o modelo com `/model` no meio do chat e ver "por modelo" na linha do Tech Lead.
-2. O CI avisa que `actions/checkout@v4` e `actions/setup-node@v4` miram o Node 20, que está obsoleto. Quando mexer no workflow, suba as duas para a versão seguinte.
-3. Abrir as candidatas do [[Roteiro]] como issues, a partir do [[Template - Tarefa]].
+1. O CI avisa que `actions/checkout@v4` e `actions/setup-node@v4` miram o Node 20, que está obsoleto. Quando mexer no workflow, suba as duas para a versão seguinte.
+2. Abrir as candidatas do [[Roteiro]] como issues, a partir do [[Template - Tarefa]].
